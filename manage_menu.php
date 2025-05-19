@@ -301,7 +301,7 @@ if (isset($_GET['edit'])) {
                         <td><?= $item['id'] ?></td>
                         <td><?= htmlspecialchars($item['item_name']) ?></td>
                         <td><?= nl2br(htmlspecialchars($item['description'])) ?></td>
-                        <td>Rs<?= number_format($item['price'], 2) ?></td>
+                        <td>Rs <?= number_format($item['price'], 2) ?></td>
                         <td><?= htmlspecialchars($item['category']) ?></td>
                         <td>
                             <a class="action-link" href="manage_menu.php?edit=<?= $item['id'] ?>">Edit</a>

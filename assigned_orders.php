@@ -42,7 +42,15 @@ try {
     </style>
 </head>
 <body>
-
+<div class="navbar">
+    <h1>Staff Panel</h1>
+    <ul>
+          <li> <a href="staff_dashboard.php">Home</a></li>
+        <li><a href="assigned_orders.php">Assigned Orders</a></li>
+        <li><a href="table_bookings.php">Table Bookings</a></li>
+        <li><a class="logout" href="logout.php">Logout</a></li>
+    </ul>
+</div>
 <div class="container">
     <h2>Your Assigned Orders</h2>
 
