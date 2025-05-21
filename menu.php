@@ -19,52 +19,55 @@ try {
     <meta charset="UTF-8" />
     <title>Menu - Restaurant</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
-            margin: 0; padding: 20px;
-        }
+       body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f2f5;
+}
+
        .navbar {
-            background: linear-gradient(to right, #2c3e50, #34495e);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+    background: linear-gradient(to right, #2c3e50, #34495e);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
 
-        .navbar h1 {
-            margin: 0;
-            font-size: 26px;
-        }
+.navbar h1 {
+    margin: 0;
+    font-size: 26px;
+}
 
-        .navbar ul {
-            list-style: none;
-            display: flex;
-            margin: 0;
-            padding: 0;
-        }
+.navbar ul {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
 
-        .navbar li {
-            margin-left: 25px;
-        }
+.navbar li {
+    margin-left: 25px;
+}
 
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.3s;
-        }
+.navbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s;
+}
 
-        .navbar a:hover,
-        .navbar a.logout:hover {
-            color: #1abc9c;
-        }
+.navbar a:hover,
+.navbar a.logout:hover {
+    color: #1abc9c;
+}
 
-        .navbar .logout {
-            color: #e74c3c;
-        }
+.navbar .logout {
+    color: #e74c3c;
+}
+
         .menu-container {
             max-width: 900px;
             margin: 30px auto;

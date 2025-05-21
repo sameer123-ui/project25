@@ -52,10 +52,11 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8" />
     <title>Manage Users</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f9fafb;
-            padding: 30px;
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
         }
         h1 {
             margin-bottom: 20px;

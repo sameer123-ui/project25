@@ -5,7 +5,6 @@ include 'db_connect.php';
 
 $userId = $_SESSION['user_id'];
 
-// Fetch menu items
 try {
     $stmt = $conn->prepare("SELECT id, item_name, price, category FROM menu ORDER BY category, item_name");
     $stmt->execute();
@@ -14,15 +13,16 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
-// Handle form submission
+$inputQuantities = [];
+$inputPaymentMethod = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $quantities = $_POST['quantity'] ?? [];
-    $paymentMethod = $_POST['payment_method'] ?? '';
+    $inputQuantities = $_POST['quantity'] ?? [];
+    $inputPaymentMethod = $_POST['payment_method'] ?? '';
     $allowedMethods = ['Cash', 'Card', 'UPI'];
 
-    // Filter only items with quantity > 0
     $orderItems = [];
-    foreach ($quantities as $menuId => $qty) {
+    foreach ($inputQuantities as $menuId => $qty) {
         $qty = (int)$qty;
         if ($qty > 0) {
             $orderItems[$menuId] = $qty;
@@ -31,14 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (count($orderItems) === 0) {
         $error = "Please select at least one item with quantity greater than zero.";
-    } elseif (!in_array($paymentMethod, $allowedMethods)) {
+    } elseif (!in_array($inputPaymentMethod, $allowedMethods, true)) {
         $error = "Please select a valid payment method.";
     } else {
-        // Calculate total price and build detailed order info
         try {
             $menuIds = array_keys($orderItems);
             $placeholders = implode(',', array_fill(0, count($menuIds), '?'));
-
             $stmtMenu = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
             $stmtMenu->execute($menuIds);
             $menuDetails = $stmtMenu->fetchAll(PDO::FETCH_ASSOC);
@@ -52,12 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             foreach ($orderItems as $menuId => $qty) {
-                if (!isset($menuMap[$menuId])) {
-                    continue;
-                }
+                if (!isset($menuMap[$menuId])) continue;
+
                 $item = $menuMap[$menuId];
                 $subtotal = $item['price'] * $qty;
                 $totalPrice += $subtotal;
+
                 $orderDetailsArr[] = [
                     'id' => $menuId,
                     'name' => $item['item_name'],
@@ -69,16 +67,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $orderDetailsJson = json_encode($orderDetailsArr);
 
-            // Insert into orders table with payment method
-            $stmt = $conn->prepare("INSERT INTO orders (user_id, order_date, total, status, order_details, payment_method) VALUES (:user_id, NOW(), :total, 'Pending', :order_details, :payment_method)");
+            $stmt = $conn->prepare("INSERT INTO orders (user_id, order_date, total, status, order_details, payment_method, assigned_staff_id) 
+                                    VALUES (:user_id, NOW(), :total, 'pending', :order_details, :payment_method, NULL)");
+
             $stmt->execute([
                 ':user_id' => $userId,
                 ':total' => $totalPrice,
                 ':order_details' => $orderDetailsJson,
-                ':payment_method' => $paymentMethod
+                ':payment_method' => $inputPaymentMethod,
             ]);
 
-            $success = "Order placed successfully! Total: $" . number_format($totalPrice, 2);
+            $success = "Order placed successfully! Total: Rs " . number_format($totalPrice, 2);
+
+            // Reset inputs on success
+            $inputQuantities = [];
+            $inputPaymentMethod = '';
+
         } catch (PDOException $e) {
             $error = "Failed to place order: " . $e->getMessage();
         }
@@ -86,17 +90,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <title>Place Order - Restaurant</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f9f9f9;
-            margin: 0; padding: 20px;
-        }
+      body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f2f5;
+}
+
        .navbar {
             background: linear-gradient(to right, #2c3e50, #34495e);
             padding: 20px 40px;
@@ -223,14 +230,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div>Welcome, <?= htmlspecialchars($_SESSION['username']) ?></div>
     <div>
         <ul>
-        <li> <a href="user_dashboard.php">Home</a></li>
-        <li><a href="menu.php">View Menu</a></li>
-    <li><a href="order_menu.php">Place an Order</a></li>
-    <li><a href="my_orders.php">My Orders</a></li>
-        <li><a href="order_history.php">Order History</a></li>
-        <li><a href="profile.php">Manage Profile</a></li>
-        <li><a class="logout" href="logout.php">Logout</a></li>
-    </ul>
+            <li><a href="user_dashboard.php">Home</a></li>
+            <li><a href="menu.php">View Menu</a></li>
+            <li><a href="order_menu.php">Place an Order</a></li>
+            <li><a href="my_orders.php">My Orders</a></li>
+            <li><a href="order_history.php">Order History</a></li>
+            <li><a href="profile.php">Manage Profile</a></li>
+            <li><a class="logout" href="logout.php">Logout</a></li>
+        </ul>
     </div>
 </div>
 
@@ -275,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <option value="">-- Select Payment Method --</option>
                 <option value="Cash">Cash on Delivery</option>
                 <option value="Card">Mobile banking</option>
-                
+               
             </select>
         </div>
 

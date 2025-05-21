@@ -1,36 +1,28 @@
 <?php
 session_start();
-include 'auth_check.php';  // Or whatever file you use for session validation
+include 'auth_check.php';
+include 'db_connect.php';
 
-// Check if user is logged in and role is staff
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'staff') {
+if ($_SESSION['role'] !== 'staff') {
     header("Location: login.php");
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    include 'db_connect.php';
+$staffId = $_SESSION['user_id'];
+$orderId = $_POST['order_id'] ?? null;
+$status = $_POST['status'] ?? null;
 
-    $orderId = $_POST['order_id'] ?? null;
-    $newStatus = $_POST['status'] ?? null;
+$allowedStatuses = ['pending', 'preparing', 'completed', 'cancelled'];
 
-    if ($orderId && $newStatus) {
-        try {
-            $stmt = $conn->prepare("UPDATE orders SET status = :status WHERE id = :id AND assigned_staff_id = :staff_id");
-            $stmt->execute([
-                ':status' => $newStatus,
-                ':id' => $orderId,
-                ':staff_id' => $_SESSION['user_id']
-            ]);
-        } catch (PDOException $e) {
-            die("Database error: " . $e->getMessage());
-        }
+if ($orderId && in_array($status, $allowedStatuses)) {
+    try {
+        // Update only orders assigned to this staff
+        $stmt = $conn->prepare("UPDATE orders SET status = :status WHERE id = :order_id AND assigned_staff_id = :staff_id");
+        $stmt->execute(['status' => $status, 'order_id' => $orderId, 'staff_id' => $staffId]);
+    } catch (PDOException $e) {
+        // Handle error or log
     }
-    // After updating, redirect back to the orders page
-    header("Location: view_orders.php");
-    exit();
 }
 
-// If accessed without POST, redirect away
-header("Location: view_orders.php");
+header("Location: assigned_orders.php");
 exit();
