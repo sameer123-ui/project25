@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 21, 2025 at 06:32 PM
+-- Generation Time: May 22, 2025 at 09:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -42,7 +42,9 @@ CREATE TABLE `menu` (
 INSERT INTO `menu` (`id`, `item_name`, `description`, `price`, `category`) VALUES
 (1, 'Chicken Momo', 'Steam/ Fry/ Jhol', 150.00, 'Momo'),
 (2, 'Buff Momo', 'Steam/ Fry/ Jhol', 120.00, 'Momo'),
-(3, 'Veg Momo', 'Steam/ Fry/ Jhol', 100.00, 'Momo');
+(3, 'Veg Momo', 'Steam/ Fry/ Jhol', 100.00, 'Momo'),
+(4, 'Americano', 'Cold/ Hot', 400.00, 'Coffee'),
+(5, 'capuccinio', 'Cold / Hot', 450.00, 'Coffee');
 
 -- --------------------------------------------------------
 
@@ -69,12 +71,12 @@ INSERT INTO `orders` (`id`, `user_id`, `order_date`, `order_details`, `total`, `
 (1, 5, '2025-05-15 13:28:22', '[{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150}]', 150.00, 'completed', 6, NULL),
 (2, 5, '2025-05-19 12:26:03', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL),
 (3, 5, '2025-05-19 12:26:44', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL),
-(4, 5, '2025-05-19 13:23:12', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480}]', 480.00, 'Pending', 7, 'Cash'),
+(4, 5, '2025-05-19 13:23:12', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480}]', 480.00, 'completed', 7, 'Cash'),
 (5, 5, '2025-05-21 21:22:25', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":3,\"price\":\"100.00\",\"subtotal\":300}]', 570.00, 'completed', 6, 'Cash'),
 (6, 5, '2025-05-21 21:26:32', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":5,\"price\":\"120.00\",\"subtotal\":600}]', 600.00, 'completed', 7, 'Cash'),
-(7, 5, '2025-05-21 21:29:13', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":4,\"price\":\"150.00\",\"subtotal\":600},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":4,\"price\":\"100.00\",\"subtotal\":400}]', 1480.00, 'pending', 7, 'Cash'),
-(8, 5, '2025-05-21 21:32:19', '[{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 100.00, 'pending', 7, 'UPI'),
-(9, 5, '2025-05-21 21:36:45', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 120.00, 'pending', 7, 'UPI'),
+(7, 5, '2025-05-21 21:29:13', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":4,\"price\":\"150.00\",\"subtotal\":600},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":4,\"price\":\"100.00\",\"subtotal\":400}]', 1480.00, 'completed', 7, 'Cash'),
+(8, 5, '2025-05-21 21:32:19', '[{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 100.00, 'completed', 7, 'UPI'),
+(9, 5, '2025-05-21 21:36:45', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 120.00, 'completed', 7, 'UPI'),
 (10, 5, '2025-05-21 21:43:46', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":3,\"price\":\"120.00\",\"subtotal\":360}]', 360.00, 'completed', 6, 'Cash');
 
 -- --------------------------------------------------------
@@ -117,6 +119,14 @@ CREATE TABLE `table_bookings` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `table_bookings`
+--
+
+INSERT INTO `table_bookings` (`id`, `user_id`, `table_number`, `booking_date`, `status`, `created_at`, `updated_at`) VALUES
+(1, 5, 1, '2025-05-22 12:54:00', 'confirmed', '2025-05-22 07:10:15', '2025-05-22 07:12:48'),
+(2, 11, 2, '2025-05-22 13:05:00', 'cancelled', '2025-05-22 07:20:42', '2025-05-22 07:21:04');
+
 -- --------------------------------------------------------
 
 --
@@ -136,9 +146,10 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
 (4, 'sameer12', '$2y$10$B4vTQa6knm4jztXa05FfXO/eXFiLyeKamHbbDYQzBHKo2sxEnz32e', 'admin'),
-(5, 'test', '$2y$10$VzVkcPD6vTN3fhfZ4BITS.ATzf5kpBIATnD.KTuz40JBr4Cf25Z26', 'user'),
-(6, 'test1', '$2y$10$oXva3oTuwjafZsAPMuKusudQmYUgdm1lC0S4KR1gU5pVPkm0KrFFS', 'staff'),
-(7, 'test2', '$2y$10$s5dOukW8R.FdWDN3CpQ0te9wKW1RO2IXynCgozjcIaMr0LbsrPGLK', 'staff');
+(5, 'kushal1', '$2y$10$VzVkcPD6vTN3fhfZ4BITS.ATzf5kpBIATnD.KTuz40JBr4Cf25Z26', 'user'),
+(6, 'sushil', '$2y$10$oXva3oTuwjafZsAPMuKusudQmYUgdm1lC0S4KR1gU5pVPkm0KrFFS', 'staff'),
+(7, 'sahaj', '$2y$10$s5dOukW8R.FdWDN3CpQ0te9wKW1RO2IXynCgozjcIaMr0LbsrPGLK', 'staff'),
+(11, 'yalu', '$2y$10$eHWwjzFI4paIhRH937YgtOu0VZILjX7f5GAEkFkQI4zFZjEdTALW6', 'user');
 
 --
 -- Indexes for dumped tables
@@ -184,7 +195,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `menu`
 --
 ALTER TABLE `menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -202,13 +213,13 @@ ALTER TABLE `staff`
 -- AUTO_INCREMENT for table `table_bookings`
 --
 ALTER TABLE `table_bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
