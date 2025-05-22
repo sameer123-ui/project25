@@ -16,14 +16,15 @@ try {
     $stmtOrders->execute(['staffId' => $staffId]);
     $assignedOrdersCount = $stmtOrders->fetchColumn();
 
-    // Fetch count of active table bookings (assuming a 'status' column exists)
-    $stmtBookings = $conn->prepare("SELECT COUNT(*) FROM table_bookings WHERE status = 'active'");
+    // Fetch count of active table bookings — consider both 'pending' and 'confirmed' as active statuses
+    $stmtBookings = $conn->prepare("SELECT COUNT(*) FROM table_bookings WHERE status IN ('pending', 'confirmed')");
     $stmtBookings->execute();
     $tableBookingsCount = $stmtBookings->fetchColumn();
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
 }
 ?>
+
 
 
 <!DOCTYPE html>

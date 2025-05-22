@@ -235,6 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="order_menu.php">Place an Order</a></li>
             <li><a href="my_orders.php">My Orders</a></li>
             <li><a href="order_history.php">Order History</a></li>
+              <li><a href="book_table.php">Booking</a></li>
+               <li><a href="my_bookings.php">My bookings</a></li>
             <li><a href="profile.php">Manage Profile</a></li>
             <li><a class="logout" href="logout.php">Logout</a></li>
         </ul>
