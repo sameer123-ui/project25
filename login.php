@@ -5,6 +5,12 @@ ini_set('display_errors', 1);
 
 include 'db_connect.php'; // assumes $conn is a PDO object
 
+define('CUSTOM_SALT', 'your-secure-salt-value'); // Use the same salt as in register.php
+
+function custom_hash($password) {
+    return hash_hmac('sha256', $password, CUSTOM_SALT);
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -19,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        if (password_verify($password, $user['password'])) {
+        $hashed_input = custom_hash($password);
+        if ($hashed_input === $user['password']) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
@@ -46,9 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <title>Login - Restaurant System</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', sans-serif;
             margin: 0;

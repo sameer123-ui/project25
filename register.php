@@ -4,7 +4,14 @@ ini_set('display_errors', 1);
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
+
 include 'db_connect.php';
+
+define('CUSTOM_SALT', 'your-secure-salt-value'); // use the same salt as in login
+
+function custom_hash($password) {
+    return hash_hmac('sha256', $password, CUSTOM_SALT);
+}
 
 $error = '';
 
@@ -13,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $password = $_POST['password'];
     $role = $_POST['role'];
 
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    $hashed_password = custom_hash($password);
 
     // Check if username exists
     $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username");
@@ -45,9 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <title>Register - Restaurant System</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', sans-serif;
             margin: 0;
