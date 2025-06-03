@@ -3,6 +3,12 @@ session_start();
 include 'auth_check.php';
 include 'db_connect.php';
 
+// Use the same salt and hashing function as in register/login
+define('CUSTOM_SALT', 'your-secure-salt-value'); // Keep consistent
+function custom_hash($password) {
+    return hash_hmac('sha256', $password, CUSTOM_SALT);
+}
+
 if ($_SESSION['role'] !== 'admin') {
     header("Location: login.php");
     exit();
@@ -10,7 +16,7 @@ if ($_SESSION['role'] !== 'admin') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_staff'])) {
     $username = trim($_POST['username']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $password = custom_hash($_POST['password']); // 👈 Use custom_hash here
     $role = 'staff';
 
     $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE username = ?");

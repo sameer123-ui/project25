@@ -7,7 +7,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
 include 'db_connect.php';
 
-define('CUSTOM_SALT', 'your-secure-salt-value'); // use the same salt as in login
+define('CUSTOM_SALT', 'your-secure-salt-value'); // Use same salt as in login
 
 function custom_hash($password) {
     return hash_hmac('sha256', $password, CUSTOM_SALT);
@@ -18,7 +18,7 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
-    $role = $_POST['role'];
+    $role = 'user'; // Force role to user
 
     $hashed_password = custom_hash($password);
 
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($stmt->execute()) {
             $_SESSION['username'] = $username;
             $_SESSION['role'] = $role;
-            header("Location: login.php");
+            header("Location: login.php?registered=1");
             exit();
         } else {
             $error = "Failed to register. Please try again.";
@@ -131,12 +131,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <form method="POST">
         <input type="text" name="username" placeholder="Choose a username" required />
         <input type="password" name="password" placeholder="Create a password" required />
-        <select name="role" required>
-            <option value="">Select role</option>
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-            <option value="user">User</option>
+
+        <!-- Display dropdown (disabled for UI clarity) -->
+        <select name="visible_role" disabled>
+            <option value="user" selected>User</option>
         </select>
+
+        <!-- Actual role passed securely -->
+        <input type="hidden" name="role" value="user" />
+
         <input type="submit" value="Register" />
     </form>
     <div class="links">

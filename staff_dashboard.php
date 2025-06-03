@@ -240,7 +240,7 @@ try {
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
            
-            <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
+            <a href="staff_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
 
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
