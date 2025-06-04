@@ -160,6 +160,16 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
         <button type="submit" class="btn">Update Profile</button>
     </form>
 </div>
+    <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+    <div style="max-width: 1100px; margin: auto;">
+        <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+          
+            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
+        </div>
+        <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Customer Panel</p>
+    </div>
+</footer>
 
 </body>
 </html>

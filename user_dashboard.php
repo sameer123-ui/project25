@@ -188,6 +188,8 @@ if ($_SESSION['role'] !== 'user') {
         </div>
     </div>
 
+
+</div>
     <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
@@ -198,7 +200,5 @@ if ($_SESSION['role'] !== 'user') {
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Customer Panel</p>
     </div>
 </footer>
-</div>
-
 </body>
 </html>

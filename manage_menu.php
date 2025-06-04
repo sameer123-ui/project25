@@ -226,6 +226,40 @@ if (isset($_GET['edit'])) {
             border-radius: 6px;
             margin-bottom: 20px;
         }
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-top: 100px;
+        }
+        footer .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+        footer .quick-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        footer .quick-links a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        footer .quick-links a.logout {
+            color: #e74c3c;
+        }
+        footer .quick-links a:hover {
+            color: #1abc9c;
+        }
+        footer p {
+            font-size: 14px;
+            color: #bdc3c7;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>

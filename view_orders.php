@@ -124,6 +124,40 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
             display: inline-block;
             margin: 0;
         }
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-top: 100px;
+        }
+        footer .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+        footer .quick-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        footer .quick-links a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        footer .quick-links a.logout {
+            color: #e74c3c;
+        }
+        footer .quick-links a:hover {
+            color: #1abc9c;
+        }
+        footer p {
+            font-size: 14px;
+            color: #bdc3c7;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
@@ -196,6 +230,19 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
         </tbody>
     </table>
 </div>
+  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+    <div style="max-width: 1100px; margin: auto;">
+        <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+            <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
+            <a href="manage_menu.php" style="color: #ecf0f1; text-decoration: none;">📋 Menu</a>
+            <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
+            <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
+            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
+        </div>
+        <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
+    </div>
+</footer>
 
 </body>
 </html>
