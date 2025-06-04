@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 22, 2025 at 09:42 AM
+-- Generation Time: Jun 04, 2025 at 10:24 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,7 +44,16 @@ INSERT INTO `menu` (`id`, `item_name`, `description`, `price`, `category`) VALUE
 (2, 'Buff Momo', 'Steam/ Fry/ Jhol', 120.00, 'Momo'),
 (3, 'Veg Momo', 'Steam/ Fry/ Jhol', 100.00, 'Momo'),
 (4, 'Americano', 'Cold/ Hot', 400.00, 'Coffee'),
-(5, 'capuccinio', 'Cold / Hot', 450.00, 'Coffee');
+(5, 'Capuccinio', 'Cold / Hot', 450.00, 'Coffee'),
+(6, 'Cafe Latte', 'Cold', 250.00, 'Coffee'),
+(7, 'Cafe Mocha', 'Cold', 250.00, 'Coffee'),
+(8, 'Black Tea', 'Tea', 25.00, 'Tea'),
+(9, 'Milk tea', 'Normal Tea', 30.00, 'Tea'),
+(10, 'Masala Milk tea', 'Masala', 50.00, 'Tea'),
+(11, 'Chicken Fried rice', 'Fried rice', 200.00, 'Fried rice'),
+(12, 'Buff Fried rice', 'Fried rice', 180.00, 'Fried rice'),
+(13, 'Veg Fried rice', 'Fried rice', 100.00, 'Fried rice'),
+(14, 'Hukka', 'Mint \r\nDouble Apple\r\nBlueberry', 400.00, 'Hukka');
 
 -- --------------------------------------------------------
 
@@ -77,7 +86,11 @@ INSERT INTO `orders` (`id`, `user_id`, `order_date`, `order_details`, `total`, `
 (7, 5, '2025-05-21 21:29:13', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":4,\"price\":\"150.00\",\"subtotal\":600},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":4,\"price\":\"100.00\",\"subtotal\":400}]', 1480.00, 'completed', 7, 'Cash'),
 (8, 5, '2025-05-21 21:32:19', '[{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 100.00, 'completed', 7, 'UPI'),
 (9, 5, '2025-05-21 21:36:45', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 120.00, 'completed', 7, 'UPI'),
-(10, 5, '2025-05-21 21:43:46', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":3,\"price\":\"120.00\",\"subtotal\":360}]', 360.00, 'completed', 6, 'Cash');
+(10, 5, '2025-05-21 21:43:46', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":3,\"price\":\"120.00\",\"subtotal\":360}]', 360.00, 'completed', 6, 'Cash'),
+(11, 11, '2025-05-30 07:30:09', '[{\"id\":5,\"name\":\"capuccinio\",\"quantity\":1,\"price\":\"450.00\",\"subtotal\":450}]', 450.00, 'preparing', 6, 'Cash'),
+(12, 14, '2025-05-30 07:48:14', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'pending', 13, 'Cash'),
+(13, 14, '2025-05-30 07:55:51', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400},{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 520.00, 'cancelled', 13, 'Cash'),
+(14, 15, '2025-06-03 12:24:46', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'completed', 17, 'Cash');
 
 -- --------------------------------------------------------
 
@@ -106,26 +119,61 @@ INSERT INTO `staff` (`id`, `name`, `position`, `email`, `phone`, `hire_date`) VA
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tables`
+--
+
+CREATE TABLE `tables` (
+  `table_number` int(11) NOT NULL,
+  `capacity` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tables`
+--
+
+INSERT INTO `tables` (`table_number`, `capacity`) VALUES
+(1, 2),
+(2, 2),
+(3, 4),
+(4, 4),
+(5, 6),
+(6, 6),
+(7, 8),
+(8, 8),
+(9, 10),
+(10, 10);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `table_bookings`
 --
 
 CREATE TABLE `table_bookings` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `table_number` int(11) NOT NULL,
+  `table_number` int(11) DEFAULT NULL,
   `booking_date` datetime NOT NULL,
   `status` varchar(50) DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `people_count` int(11) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `table_bookings`
 --
 
-INSERT INTO `table_bookings` (`id`, `user_id`, `table_number`, `booking_date`, `status`, `created_at`, `updated_at`) VALUES
-(1, 5, 1, '2025-05-22 12:54:00', 'confirmed', '2025-05-22 07:10:15', '2025-05-22 07:12:48'),
-(2, 11, 2, '2025-05-22 13:05:00', 'cancelled', '2025-05-22 07:20:42', '2025-05-22 07:21:04');
+INSERT INTO `table_bookings` (`id`, `user_id`, `table_number`, `booking_date`, `status`, `created_at`, `updated_at`, `people_count`) VALUES
+(1, 5, 1, '2025-05-22 12:54:00', 'completed', '2025-05-22 07:10:15', '2025-06-03 06:37:21', 1),
+(2, 11, 2, '2025-05-22 13:05:00', 'cancelled', '2025-05-22 07:20:42', '2025-05-22 07:21:04', 1),
+(3, 14, 1, '2025-05-30 08:56:00', 'completed', '2025-05-30 02:11:13', '2025-06-03 06:37:17', 1),
+(4, 14, 1, '2025-06-04 12:21:00', 'cancelled', '2025-06-03 06:36:21', '2025-06-03 06:37:25', 1),
+(5, 14, 1, '2025-06-04 14:32:00', 'completed', '2025-06-04 07:47:52', '2025-06-04 08:07:15', 1),
+(6, 15, 10, '2025-06-05 14:37:00', 'cancelled', '2025-06-04 07:53:08', '2025-06-04 07:53:21', 3),
+(7, 14, 1, '2025-06-04 14:44:00', 'cancelled', '2025-06-04 07:59:58', '2025-06-04 08:01:38', 1),
+(8, 14, 2, '2025-06-04 14:44:00', 'cancelled', '2025-06-04 08:00:46', '2025-06-04 08:01:44', 1),
+(9, 15, 1, '2025-06-04 13:59:00', 'completed', '2025-06-04 08:08:21', '2025-06-04 08:14:11', 1);
 
 -- --------------------------------------------------------
 
@@ -147,9 +195,12 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
 (4, 'sameer12', '$2y$10$B4vTQa6knm4jztXa05FfXO/eXFiLyeKamHbbDYQzBHKo2sxEnz32e', 'admin'),
 (5, 'kushal1', '$2y$10$VzVkcPD6vTN3fhfZ4BITS.ATzf5kpBIATnD.KTuz40JBr4Cf25Z26', 'user'),
-(6, 'sushil', '$2y$10$oXva3oTuwjafZsAPMuKusudQmYUgdm1lC0S4KR1gU5pVPkm0KrFFS', 'staff'),
-(7, 'sahaj', '$2y$10$s5dOukW8R.FdWDN3CpQ0te9wKW1RO2IXynCgozjcIaMr0LbsrPGLK', 'staff'),
-(11, 'yalu', '$2y$10$eHWwjzFI4paIhRH937YgtOu0VZILjX7f5GAEkFkQI4zFZjEdTALW6', 'user');
+(11, 'yalu', '$2y$10$eHWwjzFI4paIhRH937YgtOu0VZILjX7f5GAEkFkQI4zFZjEdTALW6', 'user'),
+(12, 'sameer51', '6cb3e705f27a7937744f8bffa72c7a023d8e90ad6eb50db182855ea1cc69d33a', 'admin'),
+(13, 'sushil1', '9801ef25a37feeaacea12157acb336a61367730b746bfd96c28d80072339a90e', 'staff'),
+(14, 'yalu1', '85314765f0e2692d7d58df693f1b7fc81458dbeade336db6c497aac65b83c10a', 'user'),
+(15, 'test', '85314765f0e2692d7d58df693f1b7fc81458dbeade336db6c497aac65b83c10a', 'user'),
+(20, 'sahaj', '9801ef25a37feeaacea12157acb336a61367730b746bfd96c28d80072339a90e', 'staff');
 
 --
 -- Indexes for dumped tables
@@ -174,6 +225,12 @@ ALTER TABLE `staff`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `tables`
+--
+ALTER TABLE `tables`
+  ADD PRIMARY KEY (`table_number`);
+
+--
 -- Indexes for table `table_bookings`
 --
 ALTER TABLE `table_bookings`
@@ -195,13 +252,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `menu`
 --
 ALTER TABLE `menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `staff`
@@ -213,13 +270,13 @@ ALTER TABLE `staff`
 -- AUTO_INCREMENT for table `table_bookings`
 --
 ALTER TABLE `table_bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- Constraints for dumped tables
