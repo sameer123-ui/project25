@@ -13,13 +13,15 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
-$inputQuantities = [];
-$inputPaymentMethod = '';
+$inputQuantities = $_POST['quantity'] ?? [];
+$paymentMethod = $_POST['payment_method'] ?? '';
+
+$allowedMethods = ['Cash', 'Card', 'UPI'];
+
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $inputQuantities = $_POST['quantity'] ?? [];
-    $inputPaymentMethod = $_POST['payment_method'] ?? '';
-    $allowedMethods = ['Cash', 'Card', 'UPI'];
 
     $orderItems = [];
     foreach ($inputQuantities as $menuId => $qty) {
@@ -31,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (count($orderItems) === 0) {
         $error = "Please select at least one item with quantity greater than zero.";
-    } elseif (!in_array($inputPaymentMethod, $allowedMethods, true)) {
+    } elseif (!in_array($paymentMethod, $allowedMethods, true)) {
         $error = "Please select a valid payment method.";
     } else {
         try {
@@ -74,14 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':user_id' => $userId,
                 ':total' => $totalPrice,
                 ':order_details' => $orderDetailsJson,
-                ':payment_method' => $inputPaymentMethod,
+                ':payment_method' => $paymentMethod,
             ]);
 
             $success = "Order placed successfully! Total: Rs " . number_format($totalPrice, 2);
 
             // Reset inputs on success
             $inputQuantities = [];
-            $inputPaymentMethod = '';
+            $paymentMethod = '';
 
         } catch (PDOException $e) {
             $error = "Failed to place order: " . $e->getMessage();
@@ -90,21 +92,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <title>Place Order - Restaurant</title>
     <style>
-      body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: #f0f2f5;
-}
-
-       .navbar {
+        /* Your existing CSS here */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .navbar {
             background: linear-gradient(to right, #2c3e50, #34495e);
             padding: 20px 40px;
             display: flex;
@@ -113,35 +114,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-
-        .navbar h1 {
-            margin: 0;
-            font-size: 26px;
-        }
-
         .navbar ul {
             list-style: none;
             display: flex;
             margin: 0;
             padding: 0;
         }
-
         .navbar li {
             margin-left: 25px;
         }
-
         .navbar a {
             color: white;
             text-decoration: none;
             font-weight: 600;
             transition: 0.3s;
         }
-
         .navbar a:hover,
         .navbar a.logout:hover {
             color: #1abc9c;
         }
-
         .navbar .logout {
             color: #e74c3c;
         }
@@ -235,8 +226,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="order_menu.php">Place an Order</a></li>
             <li><a href="my_orders.php">My Orders</a></li>
             <li><a href="order_history.php">Order History</a></li>
-              <li><a href="book_table.php">Booking</a></li>
-               <li><a href="my_bookings.php">My bookings</a></li>
+            <li><a href="book_table.php">Booking</a></li>
+            <li><a href="my_bookings.php">My Bookings</a></li>
             <li><a href="profile.php">Manage Profile</a></li>
             <li><a class="logout" href="logout.php">Logout</a></li>
         </ul>
@@ -269,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="menu-item">
                 <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
                 <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
-                <input type="number" name="quantity[<?= $item['id'] ?>]" value="0" min="0" />
+                <input type="number" name="quantity[<?= $item['id'] ?>]" value="<?= isset($inputQuantities[$item['id']]) ? (int)$inputQuantities[$item['id']] : 0 ?>" min="0" />
             </div>
             <?php
         }
@@ -282,24 +273,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label for="payment_method"><strong>Payment Method:</strong></label>
             <select name="payment_method" id="payment_method" required>
                 <option value="">-- Select Payment Method --</option>
-                <option value="Cash">Cash on Delivery</option>
-                <option value="Card">Mobile banking</option>
-               
+                <option value="Cash" <?= $paymentMethod === 'Cash' ? 'selected' : '' ?>>Cash on Delivery</option>
+                <option value="Card" <?= $paymentMethod === 'Card' ? 'selected' : '' ?>>Mobile Banking (Card)</option>
+                <option value="UPI" <?= $paymentMethod === 'UPI' ? 'selected' : '' ?>>Mobile Banking (UPI)</option>
             </select>
         </div>
 
         <button type="submit" class="btn-submit">Place Order</button>
     </form>
 </div>
-    <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
-    <div style="max-width: 1100px; margin: auto;">
-        <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-          
-            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
-        </div>
-        <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Customer Panel</p>
-    </div>
-</footer>
+
 </body>
 </html>

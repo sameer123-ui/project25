@@ -16,7 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $role = $_POST['role'];
 
     if ($username && $password && $role) {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        // Custom hashing: md5(sha1(password))
+        $hashedPassword = md5(sha1($password));
+
         $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (:username, :password, :role)");
         $stmt->execute([
             ':username' => $username,
@@ -33,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
 // Handle Delete User
 if (isset($_GET['delete'])) {
     $deleteId = (int)$_GET['delete'];
-    if ($deleteId !== $_SESSION['user_id']) { // Prevent deleting self
+    if ($deleteId !== (int)$_SESSION['user_id']) { // Prevent deleting self
         $stmt = $conn->prepare("DELETE FROM users WHERE id = :id");
         $stmt->execute([':id' => $deleteId]);
     }
@@ -41,31 +43,33 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
-// Fetch all users (without email column)
+// Fetch all users
 $stmt = $conn->query("SELECT id, username, role FROM users ORDER BY id DESC");
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <title>Manage Users</title>
     <style>
-          body {
+        body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
             margin: 0;
             padding: 0;
         }
-        h1 {
-            margin-bottom: 20px;
+        h1, h2 {
+            text-align: center;
+            margin-top: 30px;
         }
         table {
             border-collapse: collapse;
-            width: 100%;
+            width: 90%;
+            margin: auto;
             background: white;
             box-shadow: 0 0 8px #ccc;
+            margin-top: 20px;
         }
         th, td {
             border: 1px solid #ddd;
@@ -85,7 +89,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             text-decoration: underline;
         }
         form.add-user {
-            margin-top: 30px;
+            margin: 30px auto;
             background: white;
             padding: 20px;
             box-shadow: 0 0 8px #ccc;
@@ -116,9 +120,10 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         .error {
             color: red;
+            text-align: center;
             margin-bottom: 15px;
         }
-       .navbar {
+        .navbar {
             background: linear-gradient(to right, #2c3e50, #34495e);
             padding: 20px 40px;
             display: flex;
@@ -194,7 +199,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="navbar">
     <h1>Admin Dashboard</h1>
     <ul>
-        <li> <a href="admin_dashboard.php">Home</a></li>
+        <li><a href="admin_dashboard.php">Home</a></li>
         <li><a href="manage_staff.php">Staff</a></li>
         <li><a href="manage_menu.php">Menu</a></li>
         <li><a href="view_orders.php">Orders</a></li>
@@ -202,7 +207,6 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>
-
 
 <h1>Manage Users</h1>
 
@@ -252,18 +256,20 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <button type="submit" name="add_user">Add User</button>
 </form>
-  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
-    <div style="max-width: 1100px; margin: auto;">
+
+<footer>
+    <div class="container">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-            <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
-            <a href="manage_menu.php" style="color: #ecf0f1; text-decoration: none;">📋 Menu</a>
-            <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
-            <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
-            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
+        <div class="quick-links">
+            <a href="manage_staff.php">👨‍🍳 Staff</a>
+            <a href="manage_menu.php">📋 Menu</a>
+            <a href="view_orders.php">🧾 Orders</a>
+            <a href="manage_users.php">👥 Users</a>
+            <a href="logout.php" class="logout">🚪 Logout</a>
         </div>
-        <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
+        <p>&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
     </div>
 </footer>
+
 </body>
 </html>
