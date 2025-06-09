@@ -274,8 +274,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <select name="payment_method" id="payment_method" required>
                 <option value="">-- Select Payment Method --</option>
                 <option value="Cash" <?= $paymentMethod === 'Cash' ? 'selected' : '' ?>>Cash on Delivery</option>
-                <option value="Card" <?= $paymentMethod === 'Card' ? 'selected' : '' ?>>Mobile Banking (Card)</option>
-                <option value="UPI" <?= $paymentMethod === 'UPI' ? 'selected' : '' ?>>Mobile Banking (UPI)</option>
+                <option value="Card" <?= $paymentMethod === 'Card' ? 'selected' : '' ?>>Mobile Banking </option>
+
             </select>
         </div>
 
