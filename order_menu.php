@@ -15,8 +15,11 @@ try {
 
 $inputQuantities = $_POST['quantity'] ?? [];
 $paymentMethod = $_POST['payment_method'] ?? '';
+$orderType = $_POST['order_type'] ?? '';
+$deliveryAddress = trim($_POST['delivery_address'] ?? '');
 
 $allowedMethods = ['Cash', 'Card', 'UPI'];
+$allowedOrderTypes = ['pickup', 'delivery'];
 
 $error = '';
 $success = '';
@@ -35,6 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Please select at least one item with quantity greater than zero.";
     } elseif (!in_array($paymentMethod, $allowedMethods, true)) {
         $error = "Please select a valid payment method.";
+    } elseif (!in_array($orderType, $allowedOrderTypes, true)) {
+        $error = "Please select a valid order type.";
+    } elseif ($orderType === 'delivery' && empty($deliveryAddress)) {
+        $error = "Please enter your delivery address for delivery orders.";
     } else {
         try {
             $menuIds = array_keys($orderItems);
@@ -69,14 +76,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $orderDetailsJson = json_encode($orderDetailsArr);
 
-            $stmt = $conn->prepare("INSERT INTO orders (user_id, order_date, total, status, order_details, payment_method, assigned_staff_id) 
-                                    VALUES (:user_id, NOW(), :total, 'pending', :order_details, :payment_method, NULL)");
+            $stmt = $conn->prepare("INSERT INTO orders (user_id, order_date, total, status, order_details, payment_method, order_type, delivery_address, assigned_staff_id) 
+                                    VALUES (:user_id, NOW(), :total, 'pending', :order_details, :payment_method, :order_type, :delivery_address, NULL)");
 
             $stmt->execute([
                 ':user_id' => $userId,
                 ':total' => $totalPrice,
                 ':order_details' => $orderDetailsJson,
                 ':payment_method' => $paymentMethod,
+                ':order_type' => $orderType,
+                ':delivery_address' => $orderType === 'delivery' ? $deliveryAddress : null,
             ]);
 
             $success = "Order placed successfully! Total: Rs " . number_format($totalPrice, 2);
@@ -84,6 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Reset inputs on success
             $inputQuantities = [];
             $paymentMethod = '';
+            $orderType = '';
+            $deliveryAddress = '';
 
         } catch (PDOException $e) {
             $error = "Failed to place order: " . $e->getMessage();
@@ -175,9 +186,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #27ae60;
             margin-right: 20px;
         }
+        input[type=number], select, textarea {
+            padding: 5px;
+            font-size: 16px;
+        }
         input[type=number] {
             width: 60px;
-            padding: 5px;
+        }
+        textarea {
+            width: 100%;
+            resize: vertical;
         }
         .btn-submit {
             display: block;
@@ -205,13 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .success {
             color: #27ae60;
         }
-        .payment-method {
+        .payment-method, .order-type, .delivery-address {
             margin-top: 25px;
-            text-align: center;
-        }
-        .payment-method select {
-            padding: 8px 12px;
-            font-size: 16px;
         }
     </style>
 </head>
@@ -228,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="order_history.php">Order History</a></li>
             <li><a href="book_table.php">Booking</a></li>
             <li><a href="my_bookings.php">My Bookings</a></li>
+                 <li><a href="feedback.php">feedback</a></li>
             <li><a href="profile.php">Manage Profile</a></li>
             <li><a class="logout" href="logout.php">Logout</a></li>
         </ul>
@@ -269,19 +283,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         ?>
 
+        <div class="order-type">
+            <label for="order_type"><strong>Order Type:</strong></label><br />
+            <select name="order_type" id="order_type" required onchange="toggleDeliveryAddress()">
+                <option value="">-- Select Order Type --</option>
+                <option value="pickup" <?= $orderType === 'pickup' ? 'selected' : '' ?>>Pickup</option>
+                <option value="delivery" <?= $orderType === 'delivery' ? 'selected' : '' ?>>Delivery</option>
+            </select>
+        </div>
+
+        <div class="delivery-address" id="deliveryAddressDiv" style="display: <?= $orderType === 'delivery' ? 'block' : 'none' ?>;">
+            <label for="delivery_address"><strong>Delivery Address:</strong></label><br />
+            <textarea name="delivery_address" id="delivery_address" rows="3" placeholder="Enter your delivery address here"><?= htmlspecialchars($deliveryAddress) ?></textarea>
+        </div>
+
         <div class="payment-method">
             <label for="payment_method"><strong>Payment Method:</strong></label>
             <select name="payment_method" id="payment_method" required>
                 <option value="">-- Select Payment Method --</option>
                 <option value="Cash" <?= $paymentMethod === 'Cash' ? 'selected' : '' ?>>Cash on Delivery</option>
-                <option value="Card" <?= $paymentMethod === 'Card' ? 'selected' : '' ?>>Mobile Banking </option>
-
+                <option value="Card" <?= $paymentMethod === 'Card' ? 'selected' : '' ?>>Mobile Banking</option>
             </select>
         </div>
 
         <button type="submit" class="btn-submit">Place Order</button>
     </form>
 </div>
+
+<script>
+function toggleDeliveryAddress() {
+    var orderType = document.getElementById('order_type').value;
+    var deliveryDiv = document.getElementById('deliveryAddressDiv');
+    if (orderType === 'delivery') {
+        deliveryDiv.style.display = 'block';
+    } else {
+        deliveryDiv.style.display = 'none';
+    }
+}
+</script>
 
 </body>
 </html>

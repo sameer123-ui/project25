@@ -170,6 +170,7 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
         <li><a href="manage_menu.php">Menu</a></li>
         <li><a href="view_orders.php">Orders</a></li>
         <li><a href="manage_users.php">Users</a></li>
+          <li><a href="view_feedback1.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>

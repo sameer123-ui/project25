@@ -213,6 +213,7 @@ try {
           <li><a href="staff_orders.php">My Orders</a></li>
         <li><a href="assigned_orders.php">Assigned Orders</a></li>
         <li><a href="table_bookings.php">Table Bookings</a></li>
+         <li><a href="view_feedback2.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>
@@ -221,17 +222,22 @@ try {
     <h2>Welcome, Staff <?= htmlspecialchars($_SESSION['username']) ?> 👋</h2>
 
     <div class="dashboard">
-        <div class="card">
+      <div class="card">
+        <a href="assigned_orders.php" class="card-link">
             <div class="card-icon">📝</div>
             <h3>Assigned Orders</h3>
             <p><?= $assignedOrdersCount ?></p>
-        </div>
+        </a>
+    </div>
 
-        <div class="card">
+    <div class="card">
+        <a href="table_bookings.php" class="card-link">
             <div class="card-icon">📅</div>
             <h3>Table Bookings</h3>
             <p><?= $tableBookingsCount ?></p>
-        </div>
+        </a>
+    </div>
+
     </div>
 </div>
 

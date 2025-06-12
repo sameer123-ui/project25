@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jun 09, 2025 at 09:07 AM
+-- Generation Time: Jun 12, 2025 at 06:13 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,29 @@ SET time_zone = "+00:00";
 --
 -- Database: `restaurant_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback`
+--
+
+CREATE TABLE `feedback` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `module` varchar(50) NOT NULL,
+  `message` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `feedback`
+--
+
+INSERT INTO `feedback` (`id`, `user_id`, `module`, `message`, `created_at`) VALUES
+(1, 15, 'payment', '111', '2025-06-12 03:35:24'),
+(2, 15, 'payment', '111', '2025-06-12 03:38:18'),
+(3, 15, 'payment', '111', '2025-06-12 03:38:39');
 
 -- --------------------------------------------------------
 
@@ -90,29 +113,33 @@ CREATE TABLE `orders` (
   `total` decimal(10,2) NOT NULL,
   `status` varchar(50) DEFAULT NULL,
   `assigned_staff_id` int(11) DEFAULT NULL,
-  `payment_method` varchar(50) DEFAULT NULL
+  `payment_method` varchar(50) DEFAULT NULL,
+  `order_type` varchar(20) NOT NULL DEFAULT 'pickup',
+  `delivery_address` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `user_id`, `order_date`, `order_details`, `total`, `status`, `assigned_staff_id`, `payment_method`) VALUES
-(1, 5, '2025-05-15 13:28:22', '[{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150}]', 150.00, 'completed', 6, NULL),
-(2, 5, '2025-05-19 12:26:03', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL),
-(3, 5, '2025-05-19 12:26:44', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL),
-(4, 5, '2025-05-19 13:23:12', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480}]', 480.00, 'completed', 7, 'Cash'),
-(5, 5, '2025-05-21 21:22:25', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":3,\"price\":\"100.00\",\"subtotal\":300}]', 570.00, 'completed', 6, 'Cash'),
-(6, 5, '2025-05-21 21:26:32', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":5,\"price\":\"120.00\",\"subtotal\":600}]', 600.00, 'completed', 7, 'Cash'),
-(7, 5, '2025-05-21 21:29:13', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":4,\"price\":\"150.00\",\"subtotal\":600},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":4,\"price\":\"100.00\",\"subtotal\":400}]', 1480.00, 'completed', 7, 'Cash'),
-(8, 5, '2025-05-21 21:32:19', '[{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 100.00, 'completed', 7, 'UPI'),
-(9, 5, '2025-05-21 21:36:45', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 120.00, 'completed', 7, 'UPI'),
-(10, 5, '2025-05-21 21:43:46', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":3,\"price\":\"120.00\",\"subtotal\":360}]', 360.00, 'completed', 6, 'Cash'),
-(11, 11, '2025-05-30 07:30:09', '[{\"id\":5,\"name\":\"capuccinio\",\"quantity\":1,\"price\":\"450.00\",\"subtotal\":450}]', 450.00, 'preparing', 6, 'Cash'),
-(12, 14, '2025-05-30 07:48:14', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'cancelled', 13, 'Cash'),
-(13, 14, '2025-05-30 07:55:51', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400},{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 520.00, 'cancelled', 13, 'Cash'),
-(14, 15, '2025-06-03 12:24:46', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'completed', 17, 'Cash'),
-(15, 15, '2025-06-09 11:59:38', '[{\"id\":27,\"name\":\"Fried Chicken\",\"quantity\":1,\"price\":\"1500.00\",\"subtotal\":1500}]', 1500.00, 'completed', 20, 'Cash');
+INSERT INTO `orders` (`id`, `user_id`, `order_date`, `order_details`, `total`, `status`, `assigned_staff_id`, `payment_method`, `order_type`, `delivery_address`) VALUES
+(1, 5, '2025-05-15 13:28:22', '[{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150}]', 150.00, 'completed', 6, NULL, 'pickup', NULL),
+(2, 5, '2025-05-19 12:26:03', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL, 'pickup', NULL),
+(3, 5, '2025-05-19 12:26:44', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 370.00, 'completed', 6, NULL, 'pickup', NULL),
+(4, 5, '2025-05-19 13:23:12', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480}]', 480.00, 'completed', 7, 'Cash', 'pickup', NULL),
+(5, 5, '2025-05-21 21:22:25', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":1,\"price\":\"150.00\",\"subtotal\":150},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":3,\"price\":\"100.00\",\"subtotal\":300}]', 570.00, 'completed', 6, 'Cash', 'pickup', NULL),
+(6, 5, '2025-05-21 21:26:32', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":5,\"price\":\"120.00\",\"subtotal\":600}]', 600.00, 'completed', 7, 'Cash', 'pickup', NULL),
+(7, 5, '2025-05-21 21:29:13', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":4,\"price\":\"120.00\",\"subtotal\":480},{\"id\":1,\"name\":\"Chicken Momo\",\"quantity\":4,\"price\":\"150.00\",\"subtotal\":600},{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":4,\"price\":\"100.00\",\"subtotal\":400}]', 1480.00, 'completed', 7, 'Cash', 'pickup', NULL),
+(8, 5, '2025-05-21 21:32:19', '[{\"id\":3,\"name\":\"Veg Momo\",\"quantity\":1,\"price\":\"100.00\",\"subtotal\":100}]', 100.00, 'completed', 7, 'UPI', 'pickup', NULL),
+(9, 5, '2025-05-21 21:36:45', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 120.00, 'completed', 7, 'UPI', 'pickup', NULL),
+(10, 5, '2025-05-21 21:43:46', '[{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":3,\"price\":\"120.00\",\"subtotal\":360}]', 360.00, 'completed', 6, 'Cash', 'pickup', NULL),
+(11, 11, '2025-05-30 07:30:09', '[{\"id\":5,\"name\":\"capuccinio\",\"quantity\":1,\"price\":\"450.00\",\"subtotal\":450}]', 450.00, 'preparing', 6, 'Cash', 'pickup', NULL),
+(12, 14, '2025-05-30 07:48:14', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'cancelled', 13, 'Cash', 'pickup', NULL),
+(13, 14, '2025-05-30 07:55:51', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400},{\"id\":2,\"name\":\"Buff Momo\",\"quantity\":1,\"price\":\"120.00\",\"subtotal\":120}]', 520.00, 'cancelled', 13, 'Cash', 'pickup', NULL),
+(14, 15, '2025-06-03 12:24:46', '[{\"id\":4,\"name\":\"Americano\",\"quantity\":1,\"price\":\"400.00\",\"subtotal\":400}]', 400.00, 'completed', 17, 'Cash', 'pickup', NULL),
+(15, 15, '2025-06-09 11:59:38', '[{\"id\":27,\"name\":\"Fried Chicken\",\"quantity\":1,\"price\":\"1500.00\",\"subtotal\":1500}]', 1500.00, 'completed', 20, 'Cash', 'pickup', NULL),
+(16, 15, '2025-06-12 09:07:46', '[{\"id\":27,\"name\":\"Fried Chicken\",\"quantity\":1,\"price\":\"1500.00\",\"subtotal\":1500},{\"id\":31,\"name\":\"Cheese Burger\",\"quantity\":1,\"price\":\"210.00\",\"subtotal\":210}]', 1710.00, 'completed', 13, 'Cash', 'pickup', NULL),
+(17, 15, '2025-06-12 09:13:13', '[{\"id\":31,\"name\":\"Cheese Burger\",\"quantity\":1,\"price\":\"210.00\",\"subtotal\":210}]', 210.00, 'pending', 13, 'Cash', 'delivery', 'Batisputali');
 
 -- --------------------------------------------------------
 
@@ -125,6 +152,19 @@ CREATE TABLE `order_items` (
   `order_id` int(11) NOT NULL,
   `menu_id` int(11) NOT NULL,
   `quantity` int(11) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `restaurant_tables`
+--
+
+CREATE TABLE `restaurant_tables` (
+  `id` int(11) NOT NULL,
+  `table_number` varchar(10) NOT NULL,
+  `capacity` int(11) NOT NULL,
+  `location` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -243,6 +283,13 @@ INSERT INTO `users` (`id`, `username`, `password`, `role`) VALUES
 --
 
 --
+-- Indexes for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- Indexes for table `menu`
 --
 ALTER TABLE `menu`
@@ -261,6 +308,12 @@ ALTER TABLE `order_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `order_id` (`order_id`),
   ADD KEY `menu_id` (`menu_id`);
+
+--
+-- Indexes for table `restaurant_tables`
+--
+ALTER TABLE `restaurant_tables`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `staff`
@@ -293,6 +346,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `feedback`
+--
+ALTER TABLE `feedback`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `menu`
 --
 ALTER TABLE `menu`
@@ -302,12 +361,18 @@ ALTER TABLE `menu`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `order_items`
 --
 ALTER TABLE `order_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `restaurant_tables`
+--
+ALTER TABLE `restaurant_tables`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
@@ -331,6 +396,12 @@ ALTER TABLE `users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `feedback`
+--
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `order_items`

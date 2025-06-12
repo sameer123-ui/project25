@@ -275,6 +275,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <li><a href="staff_orders.php">My Orders</a></li>
         <li><a href="assigned_orders.php">Assigned Orders</a></li>
         <li><a href="table_bookings.php">Table Bookings</a></li>
+         <li><a href="view_feedback2.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>

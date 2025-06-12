@@ -140,6 +140,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
         <li><a href="order_history.php">Order History</a></li>
           <li><a href="book_table.php">Booking</a></li>
            <li><a href="my_bookings.php">My bookings</a></li>
+                <li><a href="feedback.php">feedback</a></li>
           <li><a href="profile.php">Manage Profile</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>

@@ -8,21 +8,40 @@ if ($_SESSION['role'] !== 'staff') {
     exit();
 }
 
-$staffId = $_SESSION['user_id'];
-$orderId = $_POST['order_id'] ?? null;
-$status = $_POST['status'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $staffId = $_SESSION['user_id'];
+    $orderId = filter_input(INPUT_POST, 'order_id', FILTER_VALIDATE_INT);
+    $newStatus = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
 
-$allowedStatuses = ['pending', 'preparing', 'completed', 'cancelled'];
+    $validStatuses = ['pending', 'preparing', 'completed', 'cancelled'];
 
-if ($orderId && in_array($status, $allowedStatuses)) {
-    try {
-        // Update only orders assigned to this staff
-        $stmt = $conn->prepare("UPDATE orders SET status = :status WHERE id = :order_id AND assigned_staff_id = :staff_id");
-        $stmt->execute(['status' => $status, 'order_id' => $orderId, 'staff_id' => $staffId]);
-    } catch (PDOException $e) {
-        // Handle error or log
+    if (!$orderId || !in_array($newStatus, $validStatuses)) {
+        die("Invalid order ID or status.");
     }
-}
 
-header("Location: assigned_orders.php");
-exit();
+    try {
+        // Verify the order belongs to this staff
+        $stmt = $conn->prepare("SELECT assigned_staff_id FROM orders WHERE id = :order_id");
+        $stmt->execute(['order_id' => $orderId]);
+        $assignedStaffId = $stmt->fetchColumn();
+
+        if ($assignedStaffId != $staffId) {
+            die("You are not authorized to update this order.");
+        }
+
+        // Update the status
+        $updateStmt = $conn->prepare("UPDATE orders SET status = :status WHERE id = :order_id");
+        $updateStmt->execute([
+            'status' => $newStatus,
+            'order_id' => $orderId
+        ]);
+
+        header("Location: staff_orders.php?msg=" . urlencode("Order #$orderId status updated to " . ucfirst($newStatus) . "."));
+        exit();
+    } catch (PDOException $e) {
+        die("Database error: " . $e->getMessage());
+    }
+} else {
+    header("Location: staff_orders.php");
+    exit();
+}

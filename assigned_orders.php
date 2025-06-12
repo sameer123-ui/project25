@@ -31,23 +31,40 @@ try {
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
 }
+
+// Handle assignment form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assign_order_id'])) {
+    $assignOrderId = (int)$_POST['assign_order_id'];
+
+    // Only assign if not already assigned
+    $checkStmt = $conn->prepare("SELECT assigned_staff_id FROM orders WHERE id = :order_id");
+    $checkStmt->execute(['order_id' => $assignOrderId]);
+    $currentAssignment = $checkStmt->fetchColumn();
+
+    if (empty($currentAssignment)) {
+        $updateStmt = $conn->prepare("UPDATE orders SET assigned_staff_id = :staff_id WHERE id = :order_id");
+        $updateStmt->execute(['staff_id' => $staffId, 'order_id' => $assignOrderId]);
+        header("Location: assigned_orders.php?msg=" . urlencode("Order #$assignOrderId assigned to you."));
+        exit();
+    } else {
+        header("Location: assigned_orders.php?msg=" . urlencode("Order #$assignOrderId is already assigned."));
+        exit();
+    }
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>My Assigned Orders</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <title>Assign Orders</title>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
-            margin: 0;
-            padding: 0;
-            color: #2c3e50;
+            margin: 0; padding: 0;
         }
-        nav {
+        .navbar {
             background: linear-gradient(to right, #2c3e50, #34495e);
             padding: 20px 40px;
             display: flex;
@@ -56,40 +73,21 @@ try {
             color: white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        nav .logo {
-            font-size: 24px;
-            font-weight: 700;
-        }
-        nav ul {
+        .navbar h1 { margin: 0; font-size: 26px; }
+        .navbar ul {
             list-style: none;
             display: flex;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
         }
-        nav ul li {
-            margin-left: 25px;
+        .navbar li { margin-left: 25px; }
+        .navbar a {
+            color: white; text-decoration: none; font-weight: 600;
+            transition: 0.3s;
         }
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-            padding: 6px 12px;
-            border-radius: 5px;
-        }
-        nav ul li a:hover {
-            color: #1abc9c;
-            background-color: rgba(26, 188, 156, 0.1);
-        }
-        nav ul li a.logout {
-            color: #e74c3c;
-        }
-        nav ul li a.logout:hover {
-            color: #c0392b;
-            background-color: rgba(231, 76, 60, 0.1);
-        }
-
-        main.container {
+        .navbar a:hover,
+        .navbar a.logout:hover { color: #1abc9c; }
+        .navbar .logout { color: #e74c3c; }
+        .container {
             max-width: 1100px;
             margin: 40px auto;
             background-color: white;
@@ -98,57 +96,53 @@ try {
             box-shadow: 0 6px 20px rgba(0,0,0,0.1);
         }
         h2 {
-            margin-bottom: 20px;
-            font-weight: 600;
+            text-align: center;
+            color: #2c3e50;
         }
         table {
-            border-collapse: collapse;
             width: 100%;
-            font-size: 15px;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
+            padding: 12px;
             border: 1px solid #ddd;
-            padding: 12px 15px;
-            vertical-align: top;
+            text-align: center;
+            vertical-align: middle;
         }
         th {
-            background: black;
+            background: #2c3e50;
             color: white;
-            text-align: left;
         }
-        button {
-            padding: 8px 14px;
+        select, button {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
             cursor: pointer;
-            background-color: #27ae60;
-            border: none;
-            color: white;
-            border-radius: 6px;
             font-weight: 600;
-            transition: background-color 0.3s ease;
+            background-color: #34495e;
+            color: white;
+            transition: 0.3s;
         }
         button:hover {
-            background-color: #1e8449;
-        }
-        select {
-            padding: 6px 8px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-weight: 600;
-            cursor: pointer;
-            background-color: white;
-            transition: border-color 0.3s ease;
-        }
-        select:hover {
-            border-color: #2980b9;
-        }
-        small {
-            display: block;
-            margin-top: 5px;
-            color: #27ae60;
-            font-weight: 600;
+            background-color: #1abc9c;
         }
         form {
             margin: 0;
+        }
+        .order-items {
+            text-align: left;
+            font-size: 14px;
+            max-width: 250px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .message {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: green;
         }
         footer {
             background-color: #2c3e50;
@@ -184,106 +178,94 @@ try {
             color: #bdc3c7;
             margin-top: 0;
         }
-        /* Responsive for small screens */
-        @media (max-width: 768px) {
-            nav ul {
-                flex-wrap: wrap;
-            }
-            nav ul li {
-                margin-left: 10px;
-            }
-            main.container {
-                margin: 20px 15px;
-                padding: 20px;
-            }
-            table {
-                font-size: 13px;
-            }
-            th, td {
-                padding: 8px 10px;
-            }
-        }
     </style>
 </head>
 <body>
 
-<nav>
-    <div class="logo">Staff Panel</div>
+<div class="navbar">
+    <h1>Staff Panel</h1>
     <ul>
         <li><a href="staff_dashboard.php">Home</a></li>
         <li><a href="staff_orders.php">My Orders</a></li>
         <li><a href="assigned_orders.php">Assigned Orders</a></li>
         <li><a href="table_bookings.php">Table Bookings</a></li>
+         <li><a href="view_feedback2.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
-</nav>
+</div>
 
-<main class="container">
-    <h2>My Assigned Orders</h2>
+<div class="container">
+    <h2>Assign Orders to Myself</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>Order Details</th>
-                <th>Total (Rs)</th>
-                <th>Payment</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($orders)): ?>
-                <tr><td colspan="8" style="text-align:center;">No orders found.</td></tr>
-            <?php else: ?>
+    <?php if (isset($_GET['msg'])): ?>
+        <p class="message"><?= htmlspecialchars($_GET['msg']) ?></p>
+    <?php endif; ?>
+
+    <?php if (empty($orders)): ?>
+        <p style="text-align:center;">No available orders to assign.</p>
+    <?php else: ?>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Order Details</th>
+                    <th>Total (Rs)</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Assigned Staff</th>
+                    <th>Assign to Me</th>
+                </tr>
+            </thead>
+            <tbody>
                 <?php foreach ($orders as $order): ?>
                     <tr>
                         <td><?= htmlspecialchars($order['id']) ?></td>
                         <td><?= htmlspecialchars($order['customer_name']) ?></td>
                         <td><?= htmlspecialchars($order['order_date']) ?></td>
-                        <td>
+                        <td class="order-items">
                             <?php
-                            $details = json_decode($order['order_details'], true);
-                            if ($details) {
-                                foreach ($details as $item) {
+                            $items = json_decode($order['order_details'], true);
+                            if (is_array($items)) {
+                                foreach ($items as $item) {
                                     echo htmlspecialchars("{$item['quantity']} x {$item['name']} (Rs " . number_format($item['subtotal'], 2) . ")") . "<br>";
                                 }
                             } else {
-                                echo "No details";
+                                echo "N/A";
                             }
                             ?>
                         </td>
-                        <td>Rs <?= number_format($order['total'], 2) ?></td>
+                        <td><?= number_format($order['total'], 2) ?></td>
                         <td><?= htmlspecialchars($order['payment_method'] ?? 'N/A') ?></td>
                         <td><?= ucfirst(htmlspecialchars($order['status'])) ?></td>
                         <td>
-                            <?php if ($order['assigned_staff_id'] === null): ?>
-                                <form method="POST" action="claim_order.php">
-                                    <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
-                                    <button type="submit">Claim</button>
+                            <?php
+                            if ($order['assigned_staff_id']) {
+                                echo "Staff #" . htmlspecialchars($order['assigned_staff_id']);
+                            } else {
+                                echo "<em>Unassigned</em>";
+                            }
+                            ?>
+                        </td>
+                        <td>
+                            <?php if (empty($order['assigned_staff_id'])): ?>
+                                <form method="POST" style="margin:0;">
+                                    <input type="hidden" name="assign_order_id" value="<?= $order['id'] ?>">
+                                    <button type="submit">Assign to Me</button>
                                 </form>
                             <?php else: ?>
-                                <form method="POST" action="update_order_status.php">
-                                    <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
-                                    <select name="status" onchange="this.form.submit()">
-                                        <option value="pending" <?= $order['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                        <option value="preparing" <?= $order['status'] === 'preparing' ? 'selected' : '' ?>>Preparing</option>
-                                        <option value="completed" <?= $order['status'] === 'completed' ? 'selected' : '' ?>>Completed</option>
-                                        <option value="cancelled" <?= $order['status'] === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
-                                    </select>
-                                </form>
-                                <small>✔ Yours</small>
+                                <span style="color: #888;">Already assigned</span>
                             <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            <?php endif; ?>
-        </tbody>
-    </table>
-</main>
- <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>
+
+  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
