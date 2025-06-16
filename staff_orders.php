@@ -10,25 +10,56 @@ if ($_SESSION['role'] !== 'staff') {
 
 $staffId = $_SESSION['user_id'];
 
-// Fetch orders assigned to this staff
+// Set default filter/sort values
+$startDate = $_GET['start_date'] ?? '';
+$endDate = $_GET['end_date'] ?? '';
+$sort = $_GET['sort'] ?? 'order_date';  // default sort by order_date
+$order = $_GET['order'] ?? 'DESC';      // default DESC
+
+// Validate $sort and $order values to prevent SQL injection
+$validSortColumns = ['order_date', 'total'];
+$validOrderDirections = ['ASC', 'DESC'];
+
+if (!in_array($sort, $validSortColumns)) {
+    $sort = 'order_date';
+}
+if (!in_array($order, $validOrderDirections)) {
+    $order = 'DESC';
+}
+
+// Build the query dynamically with filters and sorting
+$query = "
+    SELECT 
+        orders.id, 
+        orders.order_date, 
+        orders.total, 
+        orders.status, 
+        orders.payment_method,
+        orders.order_details,
+        orders.order_type,
+        orders.delivery_address,
+        u.username AS customer_name
+    FROM orders
+    JOIN users u ON orders.user_id = u.id
+    WHERE orders.assigned_staff_id = :staff_id
+";
+
+$params = ['staff_id' => $staffId];
+
+if ($startDate) {
+    $query .= " AND orders.order_date >= :start_date ";
+    $params['start_date'] = $startDate . ' 00:00:00';
+}
+if ($endDate) {
+    $query .= " AND orders.order_date <= :end_date ";
+    $params['end_date'] = $endDate . ' 23:59:59';
+}
+
+$query .= " ORDER BY orders.$sort $order ";
+
 try {
-    $stmt = $conn->prepare("
-        SELECT 
-            orders.id, 
-            orders.order_date, 
-            orders.total, 
-            orders.status, 
-            orders.payment_method,
-            orders.order_details,
-            orders.order_type,
-            orders.delivery_address,
-            u.username AS customer_name
-        FROM orders
-        JOIN users u ON orders.user_id = u.id
-        WHERE orders.assigned_staff_id = :staff_id
-        ORDER BY orders.order_date DESC
-    ");
-    $stmt->execute(['staff_id' => $staffId]);
+    $stmt = $conn->prepare($query);
+    $stmt->execute($params);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
@@ -97,14 +128,16 @@ try {
             background: #2c3e50;
             color: white;
         }
-        select {
+        select, input[type="date"], button {
             padding: 6px 10px;
             border-radius: 4px;
             border: 1px solid #ccc;
             cursor: pointer;
+            margin-right: 10px;
         }
-        form {
-            margin: 0;
+        form.filter-form {
+            margin-bottom: 20px;
+            text-align: center;
         }
         .order-items {
             text-align: left;
@@ -174,7 +207,7 @@ try {
         <li><a href="staff_orders.php">My Orders</a></li>
         <li><a href="assigned_orders.php">Assigned Orders</a></li>
         <li><a href="table_bookings.php">Table Bookings</a></li>
-         <li><a href="view_feedback2.php">See feedback</a></li>
+        <li><a href="view_feedback2.php">See Feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>
@@ -182,12 +215,39 @@ try {
 <div class="container">
     <h2>My Assigned Orders</h2>
 
+    <form method="GET" class="filter-form">
+        <label>
+            Start Date: 
+            <input type="date" name="start_date" value="<?= htmlspecialchars($startDate) ?>" />
+        </label>
+        <label>
+            End Date: 
+            <input type="date" name="end_date" value="<?= htmlspecialchars($endDate) ?>" />
+        </label>
+        <label>
+            Sort By: 
+            <select name="sort">
+                <option value="order_date" <?= $sort === 'order_date' ? 'selected' : '' ?>>Order Date</option>
+                <option value="total" <?= $sort === 'total' ? 'selected' : '' ?>>Total Price</option>
+            </select>
+        </label>
+        <label>
+            Order: 
+            <select name="order">
+                <option value="ASC" <?= $order === 'ASC' ? 'selected' : '' ?>>Ascending</option>
+                <option value="DESC" <?= $order === 'DESC' ? 'selected' : '' ?>>Descending</option>
+            </select>
+        </label>
+        <button type="submit">Filter</button>
+        <a href="assigned_orders.php" style="padding:6px 10px; background:#e74c3c; color:white; border-radius:4px; text-decoration:none;">Clear</a>
+    </form>
+
     <?php if (isset($_GET['msg'])): ?>
         <p class="message"><?= htmlspecialchars($_GET['msg']) ?></p>
     <?php endif; ?>
 
     <?php if (empty($orders)): ?>
-        <p style="text-align:center;">No orders assigned to you yet.</p>
+        <p style="text-align:center;">No orders assigned to you matching the criteria.</p>
     <?php else: ?>
         <table>
             <thead>
@@ -256,16 +316,19 @@ try {
     <?php endif; ?>
 </div>
 
-<footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+ <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+           
             <a href="staff_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
+
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Staff Panel</p>
     </div>
 </footer>
+
 
 </body>
 </html>

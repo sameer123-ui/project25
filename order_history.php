@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'auth_check.php';   // Make sure this validates user is logged in
+include 'auth_check.php';
 include 'db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
@@ -10,21 +10,33 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 
-// Fetch all orders for this user
+// --- FILTER & SORT LOGIC ---
+$whereClause = "WHERE user_id = :user_id";
+$params = [':user_id' => $userId];
+
+$startDate = $_GET['start_date'] ?? '';
+$endDate = $_GET['end_date'] ?? '';
+$sort = "order_date DESC"; // default
+
+if (!empty($startDate) && !empty($endDate)) {
+    $whereClause .= " AND order_date BETWEEN :start AND :end";
+    $params[':start'] = $startDate . " 00:00:00";
+    $params[':end'] = $endDate . " 23:59:59";
+}
+
+if (isset($_GET['sort'])) {
+    if ($_GET['sort'] === 'total_asc') $sort = "total ASC";
+    elseif ($_GET['sort'] === 'total_desc') $sort = "total DESC";
+}
+
 try {
     $stmt = $conn->prepare("
-        SELECT 
-            orders.id,
-            orders.order_date,
-            orders.total,
-            orders.status,
-            orders.payment_method,
-            orders.order_details
+        SELECT id, order_date, total, status, payment_method, order_details
         FROM orders
-        WHERE orders.user_id = :user_id
-        ORDER BY orders.order_date DESC
+        $whereClause
+        ORDER BY $sort
     ");
-    $stmt->execute(['user_id' => $userId]);
+    $stmt->execute($params);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
@@ -101,6 +113,44 @@ try {
             margin-bottom: 20px;
         }
 
+        form.filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 25px;
+            align-items: flex-end;
+        }
+
+        form.filters label {
+            font-weight: 600;
+            color: #34495e;
+            font-size: 14px;
+        }
+
+        form.filters input[type="date"],
+        form.filters select {
+            padding: 7px 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            width: 150px;
+        }
+
+        form.filters button {
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background-color 0.3s;
+        }
+
+        form.filters button:hover {
+            background-color: #16a085;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -162,6 +212,20 @@ try {
                 margin-left: 0;
                 margin-top: 10px;
             }
+
+            form.filters {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            form.filters input[type="date"],
+            form.filters select {
+                width: 100%;
+            }
+
+            form.filters button {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -170,14 +234,14 @@ try {
 <nav class="navbar">
     <h1> User Panel</h1>
      <ul>
-        <li> <a href="user_dashboard.php">Home</a></li>
+        <li><a href="user_dashboard.php">Home</a></li>
         <li><a href="menu.php">View Menu</a></li>
-    <li><a href="order_menu.php">Place an Order</a></li>
-    <li><a href="my_orders.php">My Orders</a></li>
+        <li><a href="order_menu.php">Place an Order</a></li>
+        <li><a href="my_orders.php">My Orders</a></li>
         <li><a href="order_history.php">Order History</a></li>
-          <li><a href="book_table.php">Booking</a></li>
-           <li><a href="my_bookings.php">My bookings</a></li>
-                <li><a href="feedback.php">feedback</a></li>
+        <li><a href="book_table.php">Booking</a></li>
+        <li><a href="my_bookings.php">My bookings</a></li>
+        <li><a href="feedback.php">Feedback</a></li>
         <li><a href="profile.php">Manage Profile</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
@@ -185,6 +249,28 @@ try {
 
 <div class="container">
     <h2>My Order History</h2>
+
+    <form class="filters" method="GET" action="order_history.php">
+        <div>
+            <label for="start_date">Start Date</label><br />
+            <input type="date" id="start_date" name="start_date" value="<?= htmlspecialchars($startDate) ?>" />
+        </div>
+        <div>
+            <label for="end_date">End Date</label><br />
+            <input type="date" id="end_date" name="end_date" value="<?= htmlspecialchars($endDate) ?>" />
+        </div>
+        <div>
+            <label for="sort">Sort By</label><br />
+            <select id="sort" name="sort">
+                <option value="order_date_desc" <?= (!isset($_GET['sort']) || $_GET['sort'] === 'order_date_desc') ? 'selected' : '' ?>>Date Descending</option>
+                <option value="total_asc" <?= (isset($_GET['sort']) && $_GET['sort'] === 'total_asc') ? 'selected' : '' ?>>Total Ascending</option>
+                <option value="total_desc" <?= (isset($_GET['sort']) && $_GET['sort'] === 'total_desc') ? 'selected' : '' ?>>Total Descending</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit">Filter</button>
+        </div>
+    </form>
 
     <?php if (empty($orders)): ?>
         <div class="no-orders">You have not placed any orders yet.</div>
@@ -232,15 +318,16 @@ try {
         </table>
     <?php endif; ?>
 </div>
-    <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+
+<footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-          
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Customer Panel</p>
     </div>
 </footer>
+
 </body>
 </html>

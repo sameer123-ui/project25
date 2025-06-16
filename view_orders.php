@@ -28,14 +28,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     exit();
 }
 
-// Fetch orders
-$orders = $conn->query("
+// Get filters and sorting from GET params
+$startDate = $_GET['start_date'] ?? null;
+$endDate = $_GET['end_date'] ?? null;
+$sortBy = $_GET['sort_by'] ?? 'order_date';
+$sortOrder = $_GET['sort_order'] ?? 'DESC';
+
+// Validate sortBy and sortOrder values to avoid SQL injection
+$allowedSortBy = ['order_date', 'total'];
+$allowedSortOrder = ['ASC', 'DESC'];
+
+if (!in_array($sortBy, $allowedSortBy)) $sortBy = 'order_date';
+if (!in_array($sortOrder, $allowedSortOrder)) $sortOrder = 'DESC';
+
+// Build WHERE conditions for date filtering
+$whereClauses = [];
+$params = [];
+
+if ($startDate) {
+    $whereClauses[] = "o.order_date >= :start_date";
+    $params['start_date'] = $startDate;
+}
+if ($endDate) {
+    $whereClauses[] = "o.order_date <= :end_date";
+    $params['end_date'] = $endDate;
+}
+
+$whereSQL = '';
+if (count($whereClauses) > 0) {
+    $whereSQL = "WHERE " . implode(" AND ", $whereClauses);
+}
+
+// Prepare the SQL with dynamic WHERE and ORDER BY
+$sql = "
     SELECT o.*, u.username AS customer_name, s.name AS staff_name
     FROM orders o
     JOIN users u ON o.user_id = u.id
     LEFT JOIN staff s ON o.assigned_staff_id = s.id
-    ORDER BY o.order_date DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+    $whereSQL
+    ORDER BY o.$sortBy $sortOrder
+";
+
+$stmt = $conn->prepare($sql);
+$stmt->execute($params);
+$orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch all staff
 $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASSOC);
@@ -115,14 +151,21 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
             background: #2c3e50;
             color: white;
         }
-        select, button {
+        select, button, input[type="date"] {
             padding: 6px 10px;
             border-radius: 4px;
             border: 1px solid #ccc;
         }
-        form {
+        form.inline {
             display: inline-block;
             margin: 0;
+        }
+        form.filters {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
         }
         footer {
             background-color: #2c3e50;
@@ -170,13 +213,41 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
         <li><a href="manage_menu.php">Menu</a></li>
         <li><a href="view_orders.php">Orders</a></li>
         <li><a href="manage_users.php">Users</a></li>
-          <li><a href="view_feedback1.php">See feedback</a></li>
+        <li><a href="view_feedback1.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>
 
 <div class="container">
     <h2>Manage Orders</h2>
+
+    <!-- Filter & Sort Form -->
+    <form method="get" class="filters">
+        <label>
+            Start Date:
+            <input type="date" name="start_date" value="<?= htmlspecialchars($startDate) ?>">
+        </label>
+        <label>
+            End Date:
+            <input type="date" name="end_date" value="<?= htmlspecialchars($endDate) ?>">
+        </label>
+        <label>
+            Sort By:
+            <select name="sort_by">
+                <option value="order_date" <?= $sortBy === 'order_date' ? 'selected' : '' ?>>Order Date</option>
+                <option value="total" <?= $sortBy === 'total' ? 'selected' : '' ?>>Total Price</option>
+            </select>
+        </label>
+        <label>
+            Order:
+            <select name="sort_order">
+                <option value="DESC" <?= $sortOrder === 'DESC' ? 'selected' : '' ?>>Descending</option>
+                <option value="ASC" <?= $sortOrder === 'ASC' ? 'selected' : '' ?>>Ascending</option>
+            </select>
+        </label>
+        <button type="submit">Apply</button>
+    </form>
+
     <table>
         <thead>
         <tr>
@@ -196,12 +267,12 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
                 <td><?= $order['id'] ?></td>
                 <td><?= htmlspecialchars($order['customer_name']) ?></td>
                 <td>₹<?= number_format($order['total'], 2) ?></td>
-                <td><?= $order['payment_method'] ?? 'Not set' ?></td>
+                <td><?= htmlspecialchars($order['payment_method'] ?? 'Not set') ?></td>
                 <td><?= htmlspecialchars($order['status']) ?></td>
-                <td><?= $order['staff_name'] ?? 'Unassigned' ?></td>
+                <td><?= htmlspecialchars($order['staff_name'] ?? 'Unassigned') ?></td>
                 <td>
                     <?php if (!$order['assigned_staff_id']): ?>
-                        <form method="post">
+                        <form method="post" class="inline">
                             <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
                             <select name="staff_id" required>
                                 <option value="">Select</option>
@@ -216,7 +287,7 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
                     <?php endif; ?>
                 </td>
                 <td>
-                    <form method="post">
+                    <form method="post" class="inline">
                         <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
                         <select name="status">
                             <option <?= $order['status'] === 'Pending' ? 'selected' : '' ?>>Pending</option>
@@ -231,15 +302,16 @@ $staffList = $conn->query("SELECT id, name FROM staff")->fetchAll(PDO::FETCH_ASS
         </tbody>
     </table>
 </div>
-  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
-    <div style="max-width: 1100px; margin: auto;">
+
+<footer>
+    <div class="container">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
-        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-            <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
-            <a href="manage_menu.php" style="color: #ecf0f1; text-decoration: none;">📋 Menu</a>
-            <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
-            <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
-            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
+        <div class="quick-links">
+            <a href="manage_staff.php">👨‍🍳 Staff</a>
+            <a href="manage_menu.php">📋 Menu</a>
+            <a href="view_orders.php">🧾 Orders</a>
+            <a href="manage_users.php">👥 Users</a>
+            <a href="logout.php" class="logout">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
     </div>
