@@ -126,6 +126,7 @@ $feedbacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 padding: 10px 8px;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -135,7 +136,7 @@ $feedbacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
    <ul>
         <li> <a href="admin_dashboard.php">Home</a></li>
         <li><a href="manage_staff.php">Staff</a></li>
-        <li><a href="manage_menu.php">Menu</a></li>
+          <li><a href="manage_menu.php" class="active">Menu</a></li>
         <li><a href="view_orders.php">Orders</a></li>
         <li><a href="manage_users.php">Users</a></li>
          <li><a href="view_feedback1.php">See feedback</a></li>

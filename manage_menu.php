@@ -98,168 +98,217 @@ if (isset($_GET['edit'])) {
     <title>Manage Menu - Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
     <style>
-        /* Use your admin dashboard styles here */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar {
-            background: linear-gradient(to right, #2c3e50, #34495e);
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
+     /* Admin Panel Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+}
+.navbar {
+    background: linear-gradient(to right, #2c3e50, #34495e);
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.navbar h1 {
+    margin: 0;
+    font-size: 24px;
+}
+.navbar ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    margin: 10px 0 0;
+    padding: 0;
+}
+.navbar li {
+    margin-left: 20px;
+}
+.navbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.navbar a:hover,
+.navbar a.logout:hover {
+    color: #1abc9c;
+}
+.navbar .logout {
+    color: #e74c3c;
+}
+.container {
+    max-width: 1100px;
+    margin: 40px auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+form {
+    margin-bottom: 30px;
+    background: #eef7f9;
+    padding: 20px;
+    border-radius: 10px;
+}
+label {
+    display: block;
+    margin: 12px 0 6px;
+    font-weight: 600;
+    color: #34495e;
+}
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    resize: vertical;
+}
+button {
+    margin-top: 15px;
+    padding: 12px 25px;
+    background: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+button:hover {
+    background: #1abc9c;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+th, td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+    word-break: break-word;
+}
+th {
+    background: #2980b9;
+    color: white;
+}
+a.action-link {
+    margin-right: 10px;
+    color: #2980b9;
+    text-decoration: none;
+    font-weight: 600;
+}
+a.action-link:hover {
+    color: #1abc9c;
+}
+.error {
+    background: #e74c3c;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+.message {
+    background: #2ecc71;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+footer {
+    background-color: #2c3e50;
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+    margin-top: 100px;
+}
+footer .container {
+    max-width: 1100px;
+    margin: auto;
+}
+footer .quick-links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+footer .quick-links a {
+    color: #ecf0f1;
+    text-decoration: none;
+    font-size: 16px;
+}
+footer .quick-links a.logout {
+    color: #e74c3c;
+}
+footer .quick-links a:hover {
+    color: #1abc9c;
+}
+footer p {
+    font-size: 14px;
+    color: #bdc3c7;
+    margin-top: 0;
+}
+
+/* -------- RESPONSIVE -------- */
+  @media (max-width: 768px) {
+        .dashboard-stats {
+            flex-direction: column;
             align-items: center;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        .navbar h1 {
-            margin: 0;
-            font-size: 26px;
-        }
-        .navbar ul {
-            list-style: none;
-            display: flex;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar li {
-            margin-left: 25px;
-        }
-        .navbar a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .navbar a:hover,
-        .navbar a.logout:hover {
-            color: #1abc9c;
-        }
-        .navbar .logout {
-            color: #e74c3c;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 40px auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        }
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-        }
-        form {
-            margin-bottom: 30px;
-            background: #eef7f9;
-            padding: 20px;
-            border-radius: 10px;
-        }
-        label {
-            display: block;
-            margin: 12px 0 6px;
-            font-weight: 600;
-            color: #34495e;
-        }
-        input[type="text"],
-        input[type="number"],
-        textarea,
-        select {
+        .card {
+            min-width: auto;
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            resize: vertical;
         }
-        button {
-            margin-top: 15px;
-            padding: 12px 25px;
-            background: #2980b9;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        button:hover {
-            background: #1abc9c;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background: #2980b9;
-            color: white;
-        }
-        a.action-link {
-            margin-right: 10px;
-            color: #2980b9;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        a.action-link:hover {
-            color: #1abc9c;
-        }
-        .error {
-            background: #e74c3c;
-            color: white;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        .message {
-            background: #2ecc71;
-            color: white;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-        footer {
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px 0;
-            text-align: center;
-            margin-top: 100px;
-        }
-        footer .container {
-            max-width: 1100px;
-            margin: auto;
-        }
-        footer .quick-links {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 10px;
-        }
-        footer .quick-links a {
-            color: #ecf0f1;
-            text-decoration: none;
-            font-size: 16px;
-        }
-        footer .quick-links a.logout {
-            color: #e74c3c;
-        }
-        footer .quick-links a:hover {
-            color: #1abc9c;
-        }
-        footer p {
-            font-size: 14px;
-            color: #bdc3c7;
-            margin-top: 0;
-        }
+    }
+    footer {
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px 0;
+        text-align: center;
+        margin-top: 100px;
+    }
+    footer .container {
+        max-width: 1100px;
+        margin: auto;
+    }
+    footer .quick-links {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 10px;
+    }
+    footer .quick-links a {
+        color: #ecf0f1;
+        text-decoration: none;
+        font-size: 16px;
+    }
+    footer .quick-links a.logout {
+        color: #e74c3c;
+    }
+    footer .quick-links a:hover {
+        color: #1abc9c;
+    }
+    footer p {
+        font-size: 14px;
+        color: #bdc3c7;
+        margin-top: 0;
+    }
     </style>
 </head>
 <body>
@@ -269,7 +318,8 @@ if (isset($_GET['edit'])) {
     <ul>
           <li> <a href="admin_dashboard.php">Home</a></li>
         <li><a href="manage_staff.php">Staff</a></li>
-        <li><a href="manage_menu.php" style="color:#1abc9c;">Menu</a></li>
+        <li><a href="manage_menu.php" class="active">Menu</a></li>
+
         <li><a href="view_orders.php">Orders</a></li>
         <li><a href="manage_users.php">Users</a></li>
           <li><a href="view_feedback1.php">See feedback</a></li>

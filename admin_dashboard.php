@@ -190,6 +190,7 @@ try {
         color: #bdc3c7;
         margin-top: 0;
     }
+    
 </style>
 </head>
 <body>
