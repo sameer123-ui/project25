@@ -11,6 +11,9 @@ if ($_SESSION['role'] !== 'staff') {
 // Define table capacities (example: 10 tables, each seats 4)
 $table_capacities = array_fill(1, 10, 4);
 
+$success_message = '';
+$error_message = '';
+
 // Handle status update POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'], $_POST['new_status'])) {
     $booking_id = intval($_POST['booking_id']);
@@ -20,8 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'], $_POST[
     if (in_array($new_status, $allowed_statuses)) {
         $stmt = $conn->prepare("UPDATE table_bookings SET status = ? WHERE id = ?");
         $stmt->execute([$new_status, $booking_id]);
+        $success_message = "Booking #$booking_id status updated to " . ucfirst($new_status) . ".";
+    } else {
+        $error_message = "Invalid status selected.";
     }
 }
+
+// Initialize unassigned bookings array
+$unassignedBookings = [];
+
 
 // Handle seating optimization POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['optimize_seating'])) {
@@ -68,6 +78,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['optimize_seating'])) 
     }
 
     $success_message = "Seating optimization completed. Tables assigned and statuses updated where applicable.";
+
+    // Fetch unassigned bookings (pending or confirmed with no table assigned)
+    $stmtUnassigned = $conn->prepare("SELECT tb.id, tb.booking_date, tb.people_count, u.username AS customer_name 
+                                      FROM table_bookings tb 
+                                      JOIN users u ON tb.user_id = u.id
+                                      WHERE tb.table_number IS NULL 
+                                        AND tb.status IN ('pending', 'confirmed') 
+                                        AND tb.booking_date >= NOW()
+                                      ORDER BY tb.booking_date ASC");
+    $stmtUnassigned->execute();
+    $unassignedBookings = $stmtUnassigned->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // If not optimizing now, fetch unassigned bookings for display if you want (optional)
+    $unassignedBookings = [];
 }
 
 // Fetch all bookings with user names
@@ -85,7 +109,6 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Staff Panel - Table Bookings</title>
 <style>
-    /* Your existing CSS here */
     body {
         font-family: 'Inter', sans-serif;
         background-color: #f0f2f5;
@@ -230,40 +253,49 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     .success {
         color: #27ae60;
     }
+    .error {
+        color: #842029;
+        background-color: #f8d7da;
+        padding: 15px;
+        border-radius: 8px;
+        max-width: 800px;
+        margin: 20px auto;
+        text-align: left;
+    }
     footer {
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px 0;
-            text-align: center;
-            margin-top: 100px;
-        }
-        footer .container {
-            max-width: 1100px;
-            margin: auto;
-        }
-        footer .quick-links {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 10px;
-        }
-        footer .quick-links a {
-            color: #ecf0f1;
-            text-decoration: none;
-            font-size: 16px;
-        }
-        footer .quick-links a.logout {
-            color: #e74c3c;
-        }
-        footer .quick-links a:hover {
-            color: #1abc9c;
-        }
-        footer p {
-            font-size: 14px;
-            color: #bdc3c7;
-            margin-top: 0;
-        }
+        background-color: #2c3e50;
+        color: white;
+        padding: 20px 0;
+        text-align: center;
+        margin-top: 100px;
+    }
+    footer .container {
+        max-width: 1100px;
+        margin: auto;
+    }
+    footer .quick-links {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 10px;
+    }
+    footer .quick-links a {
+        color: #ecf0f1;
+        text-decoration: none;
+        font-size: 16px;
+    }
+    footer .quick-links a.logout {
+        color: #e74c3c;
+    }
+    footer .quick-links a:hover {
+        color: #1abc9c;
+    }
+    footer p {
+        font-size: 14px;
+        color: #bdc3c7;
+        margin-top: 0;
+    }
 </style>
 </head>
 <body>
@@ -275,7 +307,7 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <li><a href="staff_orders.php">My Orders</a></li>
         <li><a href="assigned_orders.php">Assigned Orders</a></li>
         <li><a href="table_bookings.php">Table Bookings</a></li>
-         <li><a href="view_feedback2.php">See feedback</a></li>
+        <li><a href="view_feedback2.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
 </div>
@@ -287,9 +319,26 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="message success"><?= htmlspecialchars($success_message) ?></div>
     <?php endif; ?>
 
+    <?php if (!empty($error_message)): ?>
+        <div class="message error"><?= htmlspecialchars($error_message) ?></div>
+    <?php endif; ?>
+
     <form method="post" onsubmit="return confirm('Are you sure you want to optimize seating assignments? This will reassign tables for pending and confirmed bookings.')">
         <button type="submit" name="optimize_seating" class="optimize-btn">Optimize Seating</button>
     </form>
+
+    <?php if (!empty($unassignedBookings)): ?>
+        <div class="message error">
+            <strong>⚠️ The following bookings could NOT be assigned tables automatically and need manual attention:</strong>
+            <ul>
+                <?php foreach ($unassignedBookings as $ub): ?>
+                    <li>
+                        Booking #<?= htmlspecialchars($ub['id']) ?> for <?= htmlspecialchars($ub['customer_name']) ?> on <?= date("Y-m-d H:i", strtotime($ub['booking_date'])) ?> (<?= htmlspecialchars($ub['people_count']) ?> people)
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
 
     <table>
         <thead>
@@ -348,7 +397,8 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </tbody>
     </table>
 </div>
- <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+
+  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">

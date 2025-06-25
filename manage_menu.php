@@ -319,8 +319,8 @@ footer p {
           <li> <a href="admin_dashboard.php">Home</a></li>
         <li><a href="manage_staff.php">Staff</a></li>
         <li><a href="manage_menu.php" class="active">Menu</a></li>
-
         <li><a href="view_orders.php">Orders</a></li>
+        <li><a href="admin_bookings.php">Bookings</a></li>
         <li><a href="manage_users.php">Users</a></li>
           <li><a href="view_feedback1.php">See feedback</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
@@ -406,12 +406,14 @@ footer p {
             <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
             <a href="manage_menu.php" style="color: #1abc9c; text-decoration: none;">📋 Menu</a>
             <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
+             <a href="admin_bookings.php" style="color: #ecf0f1; text-decoration: none;">🧾 Bookings</a>
             <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
     </div>
 </footer>
+
 
 </body>
 </html>

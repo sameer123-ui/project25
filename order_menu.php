@@ -3,8 +3,9 @@ session_start();
 include 'auth_check.php';
 include 'db_connect.php';
 
-$userId = $_SESSION['user_id'];
+$userId = $_SESSION['user_id'] ?? 0;
 
+// Fetch all menu items ordered by category and name
 try {
     $stmt = $conn->prepare("SELECT id, item_name, price, category FROM menu ORDER BY category, item_name");
     $stmt->execute();
@@ -12,6 +13,61 @@ try {
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
 }
+
+// Function to get top ordered items (user-specific or global)
+function getTopItems(PDO $conn, $userId = null, $limit = 3) {
+    try {
+        if ($userId) {
+            $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
+            $stmt->execute([$userId]);
+        } else {
+            $stmt = $conn->prepare("SELECT order_details FROM orders");
+            $stmt->execute();
+        }
+        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $itemTotals = [];
+
+        foreach ($allOrders as $orderJson) {
+            $items = json_decode($orderJson, true);
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $id = $item['id'] ?? 0;
+                    $qty = $item['quantity'] ?? 0;
+                    if ($id > 0) {
+                        if (!isset($itemTotals[$id])) {
+                            $itemTotals[$id] = 0;
+                        }
+                        $itemTotals[$id] += $qty;
+                    }
+                }
+            }
+        }
+
+        arsort($itemTotals);
+        $topItemIds = array_slice(array_keys($itemTotals), 0, $limit);
+
+        if (empty($topItemIds)) return [];
+
+        $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
+        $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
+        $stmt->execute($topItemIds);
+        $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Sort according to order quantity descending
+        usort($topItems, function($a, $b) use ($itemTotals) {
+            return $itemTotals[$b['id']] <=> $itemTotals[$a['id']];
+        });
+
+        return $topItems;
+
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+$userTopItems = getTopItems($conn, $userId, 3);
+$popularItems = getTopItems($conn, null, 3);
 
 $inputQuantities = $_POST['quantity'] ?? [];
 $paymentMethod = $_POST['payment_method'] ?? '';
@@ -109,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <title>Place Order - Restaurant</title>
     <style>
-        /* Your existing CSS here */
         body {
             margin: 0;
             padding: 0;
@@ -226,6 +281,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .payment-method, .order-type, .delivery-address {
             margin-top: 25px;
         }
+
+        /* Recommendation section styles */
+        .recommendations {
+            max-width: 900px;
+            margin: 30px auto 10px auto;
+            background: white;
+            padding: 25px 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.12);
+        }
+        .recommendations h2 {
+            color: #2980b9;
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #1abc9c;
+            padding-bottom: 8px;
+        }
+        .recommendations h3 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 1.4rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+        }
+        .recommendation-list {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .recommendation-card {
+            background: #f9fafa;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+            padding: 18px 20px;
+            flex: 1 1 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .recommendation-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            transform: translateY(-6px);
+        }
+        .recommendation-card .item-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .recommendation-card .item-price {
+            font-weight: 700;
+            color: #27ae60;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        .recommendation-card input[type=number] {
+            width: 70px;
+            font-size: 1rem;
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            text-align: center;
+            align-self: flex-start;
+        }
+        @media (max-width: 700px) {
+            .recommendation-list {
+                flex-direction: column;
+            }
+            .recommendation-card {
+                flex: 1 1 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -241,13 +372,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <li><a href="order_history.php">Order History</a></li>
             <li><a href="book_table.php">Booking</a></li>
             <li><a href="my_bookings.php">My Bookings</a></li>
-                 <li><a href="feedback.php">feedback</a></li>
+            <li><a href="feedback.php">Feedback</a></li>
             <li><a href="profile.php">Manage Profile</a></li>
             <li><a class="logout" href="logout.php">Logout</a></li>
         </ul>
     </div>
 </div>
 
+<!-- Recommendations section -->
+<div class="recommendations">
+    <h2>Recommended for You</h2>
+
+    <?php if (!empty($userTopItems)): ?>
+        <h3>Your Top Ordered Items</h3>
+        <div class="recommendation-list">
+            <?php foreach ($userTopItems as $item): ?>
+                <div class="recommendation-card">
+                    <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
+                    <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <input type="number" min="0" name="quantity[<?= $item['id'] ?>]" value="<?= isset($inputQuantities[$item['id']]) ? (int)$inputQuantities[$item['id']] : 0 ?>" />
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <p>You have no previous orders.</p>
+    <?php endif; ?>
+
+    <?php if (!empty($popularItems)): ?>
+        <h3>Popular Items</h3>
+        <div class="recommendation-list">
+            <?php foreach ($popularItems as $item): ?>
+                <div class="recommendation-card">
+                    <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
+                    <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <input type="number" min="0" name="quantity[<?= $item['id'] ?>]" value="<?= isset($inputQuantities[$item['id']]) ? (int)$inputQuantities[$item['id']] : 0 ?>" />
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <p>No popular items found.</p>
+    <?php endif; ?>
+</div>
+
+<!-- Main Order Form -->
 <div class="container">
     <h2>Place Your Order</h2>
 

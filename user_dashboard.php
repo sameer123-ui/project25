@@ -1,10 +1,70 @@
 <?php
-include 'auth_check.php';
+// Show all errors for debugging (remove on production)
 
+
+session_start();
+
+include 'auth_check.php';    // Make sure user is logged in
+include 'db_connect.php';    // Your PDO connection file - must define $conn
+
+// Restrict access to users only
 if ($_SESSION['role'] !== 'user') {
     header("Location: login.php");
     exit();
 }
+
+$userId = $_SESSION['user_id'] ?? 0;
+
+// Function to get top ordered items by user or globally
+function getTopItems(PDO $conn, ?int $userId = null, int $limit = 3): array {
+    if ($userId) {
+        $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
+        $stmt->execute([$userId]);
+    } else {
+        $stmt = $conn->prepare("SELECT order_details FROM orders");
+        $stmt->execute();
+    }
+
+    $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    $itemTotals = [];
+    foreach ($allOrders as $orderJson) {
+        $items = json_decode($orderJson, true);
+        if (is_array($items)) {
+            foreach ($items as $item) {
+                $id = $item['id'] ?? 0;
+                $qty = $item['quantity'] ?? 0;
+                if ($id > 0) {
+                    $itemTotals[$id] = ($itemTotals[$id] ?? 0) + $qty;
+                }
+            }
+        }
+    }
+
+    arsort($itemTotals);
+    $topItemIds = array_slice(array_keys($itemTotals), 0, $limit);
+
+    if (empty($topItemIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
+    $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
+    $stmt->execute($topItemIds);
+    $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Sort top items in order of quantities
+    usort($topItems, function($a, $b) use ($itemTotals) {
+        return $itemTotals[$b['id']] <=> $itemTotals[$a['id']];
+    });
+
+    return $topItems;
+}
+
+// Get recommendations
+$userTopItems = getTopItems($conn, $userId, 3);
+$popularItems = getTopItems($conn, null, 3);
+
 ?>
 
 <!DOCTYPE html>
@@ -117,6 +177,35 @@ if ($_SESSION['role'] !== 'user') {
             font-weight: 600;
         }
 
+        .recommendations {
+            margin-top: 40px;
+        }
+
+        .recommendations h3 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2980b9;
+            padding-bottom: 5px;
+        }
+
+        .rec-item {
+            background: #e3f6f5;
+            border-radius: 8px;
+            padding: 12px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .rec-item .price {
+            color: #27ae60;
+            font-weight: 700;
+        }
+
         .links {
             list-style: none;
             padding: 0;
@@ -153,14 +242,14 @@ if ($_SESSION['role'] !== 'user') {
 <div class="navbar">
     <h1>User Panel</h1>
     <ul>
-        <li> <a href="user_dashboard.php">Home</a></li>
+        <li><a href="user_dashboard.php">Home</a></li>
         <li><a href="menu.php">View Menu</a></li>
-    <li><a href="order_menu.php">Place an Order</a></li>
-    <li><a href="my_orders.php">My Orders</a></li>
+        <li><a href="order_menu.php">Place an Order</a></li>
+        <li><a href="my_orders.php">My Orders</a></li>
         <li><a href="order_history.php">Order History</a></li>
         <li><a href="book_table.php">Booking</a></li>
-           <li><a href="my_bookings.php">My bookings</a></li>
-               <li><a href="feedback.php">feedback</a></li>
+        <li><a href="my_bookings.php">My Bookings</a></li>
+        <li><a href="feedback.php">Feedback</a></li>
         <li><a href="profile.php">Manage Profile</a></li>
         <li><a class="logout" href="logout.php">Logout</a></li>
     </ul>
@@ -189,17 +278,44 @@ if ($_SESSION['role'] !== 'user') {
         </div>
     </div>
 
+    <div class="recommendations">
+        <h2>Recommended for You</h2>
 
+        <h3>Your Top Ordered Items</h3>
+        <?php if (!empty($userTopItems)): ?>
+            <?php foreach ($userTopItems as $item): ?>
+                <div class="rec-item">
+                    <div><?= htmlspecialchars($item['item_name']) ?></div>
+                    <div class="price">Rs <?= number_format($item['price'], 2) ?></div>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p>You have no previous orders.</p>
+        <?php endif; ?>
+
+        <h3>Popular Items</h3>
+        <?php if (!empty($popularItems)): ?>
+            <?php foreach ($popularItems as $item): ?>
+                <div class="rec-item">
+                    <div><?= htmlspecialchars($item['item_name']) ?></div>
+                    <div class="price">Rs <?= number_format($item['price'], 2) ?></div>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p>No popular items found.</p>
+        <?php endif; ?>
+    </div>
 </div>
-    <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+
+<footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 50px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-          
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Customer Panel</p>
     </div>
 </footer>
+
 </body>
 </html>
