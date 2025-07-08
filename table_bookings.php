@@ -32,11 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['booking_id'], $_POST[
 // Initialize unassigned bookings array
 $unassignedBookings = [];
 
-
 // Handle seating optimization POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['optimize_seating'])) {
-    // Fetch all pending or confirmed upcoming bookings (future bookings only)
-    $stmt = $conn->prepare("SELECT id, people_count, status FROM table_bookings WHERE status IN ('pending', 'confirmed') AND booking_date >= NOW() ORDER BY booking_date ASC");
+    // Fetch all pending or confirmed upcoming bookings sorted by descending people_count, then booking_date ascending
+    $stmt = $conn->prepare("
+        SELECT id, people_count, status 
+        FROM table_bookings 
+        WHERE status IN ('pending', 'confirmed') 
+          AND booking_date >= NOW() 
+        ORDER BY people_count DESC, booking_date ASC
+    ");
     $stmt->execute();
     $bookings_to_assign = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -51,12 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['optimize_seating'])) 
     // Track table occupancy (table => assigned people count sum)
     $table_occupancy = array_fill_keys(array_keys($table_capacities), 0);
 
-    // Assign tables using simple bin packing logic:
+    // Assign tables using First-Fit Decreasing greedy logic
     foreach ($bookings_to_assign as $booking) {
         $people = $booking['people_count'];
         $assigned_table = null;
 
-        // Try to find a table with enough free seats (capacity - occupancy >= people)
+        // Find the first table with enough free seats
         foreach ($table_capacities as $table_num => $capacity) {
             $free_seats = $capacity - ($table_occupancy[$table_num] ?? 0);
             if ($free_seats >= $people) {
@@ -69,36 +74,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['optimize_seating'])) 
             // If booking was pending, update status to confirmed, else keep existing status
             $new_status = ($booking['status'] === 'pending') ? 'confirmed' : $booking['status'];
 
-            // Assign this booking to the table AND update status if needed
+            // Assign this booking to the table and update status if needed
             $updateStmt = $conn->prepare("UPDATE table_bookings SET table_number = ?, status = ? WHERE id = ?");
             $updateStmt->execute([$assigned_table, $new_status, $booking['id']]);
             $table_occupancy[$assigned_table] += $people;
         }
-        // If no table found, booking stays unassigned (table_number = NULL) and status unchanged
+        // If no table found, booking stays unassigned and status unchanged
     }
 
     $success_message = "Seating optimization completed. Tables assigned and statuses updated where applicable.";
 
     // Fetch unassigned bookings (pending or confirmed with no table assigned)
-    $stmtUnassigned = $conn->prepare("SELECT tb.id, tb.booking_date, tb.people_count, u.username AS customer_name 
-                                      FROM table_bookings tb 
-                                      JOIN users u ON tb.user_id = u.id
-                                      WHERE tb.table_number IS NULL 
-                                        AND tb.status IN ('pending', 'confirmed') 
-                                        AND tb.booking_date >= NOW()
-                                      ORDER BY tb.booking_date ASC");
+    $stmtUnassigned = $conn->prepare("
+        SELECT tb.id, tb.booking_date, tb.people_count, u.username AS customer_name 
+        FROM table_bookings tb 
+        JOIN users u ON tb.user_id = u.id
+        WHERE tb.table_number IS NULL 
+          AND tb.status IN ('pending', 'confirmed') 
+          AND tb.booking_date >= NOW()
+        ORDER BY tb.booking_date ASC
+    ");
     $stmtUnassigned->execute();
     $unassignedBookings = $stmtUnassigned->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // If not optimizing now, fetch unassigned bookings for display if you want (optional)
+    // If not optimizing now, fetch unassigned bookings for display (optional)
     $unassignedBookings = [];
 }
 
 // Fetch all bookings with user names
-$stmt = $conn->query("SELECT tb.id, tb.booking_date, tb.status, tb.people_count, u.username AS customer_name, tb.table_number
-                      FROM table_bookings tb
-                      JOIN users u ON tb.user_id = u.id
-                      ORDER BY tb.booking_date DESC");
+$stmt = $conn->query("
+    SELECT tb.id, tb.booking_date, tb.status, tb.people_count, u.username AS customer_name, tb.table_number
+    FROM table_bookings tb
+    JOIN users u ON tb.user_id = u.id
+    ORDER BY tb.booking_date DESC
+");
 $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -398,13 +407,11 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </table>
 </div>
 
-  <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
+<footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 400px;">
     <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
         <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
-           
             <a href="staff_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
-
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Staff Panel</p>

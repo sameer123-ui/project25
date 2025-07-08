@@ -145,12 +145,13 @@ $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php if ($bookings): ?>
             <?php foreach ($bookings as $b): ?>
                 <tr>
-                    <td><?= htmlspecialchars($b['id']) ?></td>
-                    <td><?= htmlspecialchars($b['username']) ?></td>
-                    <td><?= htmlspecialchars($b['table_number']) ?></td>
-                    <td><?= htmlspecialchars($b['booking_date']) ?></td>
-                    <td><?= htmlspecialchars($b['people_count']) ?></td>
-                    <td><?= htmlspecialchars(ucfirst($b['status'])) ?></td>
+                  <td><?= htmlspecialchars($b['id'] ?? '') ?></td>
+<td><?= htmlspecialchars($b['username'] ?? '') ?></td>
+<td><?= htmlspecialchars($b['table_number'] ?? '') ?></td>
+<td><?= htmlspecialchars($b['booking_date'] ?? '') ?></td>
+<td><?= htmlspecialchars($b['people_count'] ?? '') ?></td>
+<td><?= htmlspecialchars(ucfirst($b['status'] ?? '')) ?></td>
+
                     <td>
                         <form method="post" action="">
                             <input type="hidden" name="booking_id" value="<?= htmlspecialchars($b['id']) ?>" />

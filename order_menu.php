@@ -24,8 +24,8 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
             $stmt = $conn->prepare("SELECT order_details FROM orders");
             $stmt->execute();
         }
-        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
+        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $itemTotals = [];
 
         foreach ($allOrders as $orderJson) {
@@ -44,27 +44,28 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
             }
         }
 
-        arsort($itemTotals);
-        $topItemIds = array_slice(array_keys($itemTotals), 0, $limit);
+        if (empty($itemTotals)) return [];
 
-        if (empty($topItemIds)) return [];
-
+        $topItemIds = array_keys($itemTotals);
         $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
         $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
         $stmt->execute($topItemIds);
         $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Sort according to order quantity descending
+        // ✅ Custom sorting: by score = quantity × price
         usort($topItems, function($a, $b) use ($itemTotals) {
-            return $itemTotals[$b['id']] <=> $itemTotals[$a['id']];
+            $scoreA = $itemTotals[$a['id']] * $a['price'];
+            $scoreB = $itemTotals[$b['id']] * $b['price'];
+            return $scoreB <=> $scoreA;
         });
 
-        return $topItems;
+        return array_slice($topItems, 0, $limit);
 
     } catch (PDOException $e) {
         return [];
     }
 }
+
 
 $userTopItems = getTopItems($conn, $userId, 3);
 $popularItems = getTopItems($conn, null, 3);

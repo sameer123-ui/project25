@@ -16,7 +16,6 @@ try {
 
 // Helper function to aggregate top items for a given user or all users
 function getTopItems(PDO $conn, $userId = null, $limit = 3) {
-    // Fetch order_details JSON from orders for either a user or all users
     try {
         if ($userId) {
             $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
@@ -25,8 +24,8 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
             $stmt = $conn->prepare("SELECT order_details FROM orders");
             $stmt->execute();
         }
-        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
+        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
         $itemTotals = [];
 
         foreach ($allOrders as $orderJson) {
@@ -45,32 +44,28 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
             }
         }
 
-        // Sort by quantity descending
-        arsort($itemTotals);
+        if (empty($itemTotals)) return [];
 
-        $topItemIds = array_slice(array_keys($itemTotals), 0, $limit);
-
-        if (empty($topItemIds)) {
-            return [];
-        }
-
-        // Fetch menu details for top items
+        $topItemIds = array_keys($itemTotals);
         $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
         $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
         $stmt->execute($topItemIds);
         $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Optional: sort the fetched items according to $itemTotals order
+        // ✅ Custom sorting: by score = quantity × price
         usort($topItems, function($a, $b) use ($itemTotals) {
-            return $itemTotals[$b['id']] <=> $itemTotals[$a['id']];
+            $scoreA = $itemTotals[$a['id']] * $a['price'];
+            $scoreB = $itemTotals[$b['id']] * $b['price'];
+            return $scoreB <=> $scoreA;
         });
 
-        return $topItems;
+        return array_slice($topItems, 0, $limit);
 
     } catch (PDOException $e) {
         return [];
     }
 }
+
 
 // 2. Fetch top 3 items ordered by this user
 $userTopItems = getTopItems($conn, $userId, 3);

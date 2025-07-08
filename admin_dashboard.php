@@ -454,18 +454,18 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
 </div>
 
-<footer>
-    <div class="container">
+<footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 100px;">
+    <div style="max-width: 1100px; margin: auto;">
         <p style="margin-bottom: 10px; font-size: 16px;">Quick Links</p>
-        <div class="quick-links">
-            <a href="manage_staff.php">👨‍🍳 Staff</a>
-            <a href="manage_menu.php">📋 Menu</a>
-            <a href="view_orders.php">🧾 Orders</a>
-            <a href="admin_bookings.php">🪑 Bookings</a>
-            <a href="manage_users.php">👥 Users</a>
-            <a href="logout.php" class="logout">🚪 Logout</a>
+        <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 20px;">
+            <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
+            <a href="manage_menu.php" style="color: #1abc9c; text-decoration: none;">📋 Menu</a>
+            <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
+             <a href="admin_bookings.php" style="color: #ecf0f1; text-decoration: none;">🧾 Bookings</a>
+            <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
+            <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
-        <p>&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
+        <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
     </div>
 </footer>
 

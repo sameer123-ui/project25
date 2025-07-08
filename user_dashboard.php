@@ -16,50 +16,57 @@ if ($_SESSION['role'] !== 'user') {
 $userId = $_SESSION['user_id'] ?? 0;
 
 // Function to get top ordered items by user or globally
-function getTopItems(PDO $conn, ?int $userId = null, int $limit = 3): array {
-    if ($userId) {
-        $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
-        $stmt->execute([$userId]);
-    } else {
-        $stmt = $conn->prepare("SELECT order_details FROM orders");
-        $stmt->execute();
-    }
+function getTopItems(PDO $conn, $userId = null, $limit = 3) {
+    try {
+        if ($userId) {
+            $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
+            $stmt->execute([$userId]);
+        } else {
+            $stmt = $conn->prepare("SELECT order_details FROM orders");
+            $stmt->execute();
+        }
 
-    $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $allOrders = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $itemTotals = [];
 
-    $itemTotals = [];
-    foreach ($allOrders as $orderJson) {
-        $items = json_decode($orderJson, true);
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                $id = $item['id'] ?? 0;
-                $qty = $item['quantity'] ?? 0;
-                if ($id > 0) {
-                    $itemTotals[$id] = ($itemTotals[$id] ?? 0) + $qty;
+        foreach ($allOrders as $orderJson) {
+            $items = json_decode($orderJson, true);
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $id = $item['id'] ?? 0;
+                    $qty = $item['quantity'] ?? 0;
+                    if ($id > 0) {
+                        if (!isset($itemTotals[$id])) {
+                            $itemTotals[$id] = 0;
+                        }
+                        $itemTotals[$id] += $qty;
+                    }
                 }
             }
         }
-    }
 
-    arsort($itemTotals);
-    $topItemIds = array_slice(array_keys($itemTotals), 0, $limit);
+        if (empty($itemTotals)) return [];
 
-    if (empty($topItemIds)) {
+        $topItemIds = array_keys($itemTotals);
+        $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
+        $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
+        $stmt->execute($topItemIds);
+        $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // ✅ Custom sorting: by score = quantity × price
+        usort($topItems, function($a, $b) use ($itemTotals) {
+            $scoreA = $itemTotals[$a['id']] * $a['price'];
+            $scoreB = $itemTotals[$b['id']] * $b['price'];
+            return $scoreB <=> $scoreA;
+        });
+
+        return array_slice($topItems, 0, $limit);
+
+    } catch (PDOException $e) {
         return [];
     }
-
-    $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
-    $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
-    $stmt->execute($topItemIds);
-    $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Sort top items in order of quantities
-    usort($topItems, function($a, $b) use ($itemTotals) {
-        return $itemTotals[$b['id']] <=> $itemTotals[$a['id']];
-    });
-
-    return $topItems;
 }
+
 
 // Get recommendations
 $userTopItems = getTopItems($conn, $userId, 3);
