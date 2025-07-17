@@ -1,6 +1,7 @@
 <?php
 // Show all errors for debugging (remove on production)
-
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
 
 session_start();
 
@@ -15,7 +16,7 @@ if ($_SESSION['role'] !== 'user') {
 
 $userId = $_SESSION['user_id'] ?? 0;
 
-// Function to get top ordered items by user or globally
+// Function to get top ordered items by user or globally, with normalized score capped at 10
 function getTopItems(PDO $conn, $userId = null, $limit = 3) {
     try {
         if ($userId) {
@@ -53,11 +54,34 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
         $stmt->execute($topItemIds);
         $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // ✅ Custom sorting: by score = quantity × price
-        usort($topItems, function($a, $b) use ($itemTotals) {
-            $scoreA = $itemTotals[$a['id']] * $a['price'];
-            $scoreB = $itemTotals[$b['id']] * $b['price'];
-            return $scoreB <=> $scoreA;
+        // Calculate raw scores = quantity × price
+        $rawScores = [];
+        foreach ($topItems as $item) {
+            $rawScores[$item['id']] = ($itemTotals[$item['id']] ?? 0) * $item['price'];
+        }
+
+        // Normalize scores 0-10 capped
+        $minScore = min($rawScores);
+        $maxScore = max($rawScores);
+        $range = $maxScore - $minScore;
+
+        if ($range == 0) {
+            // all scores equal: assign 10 to all
+            foreach ($topItems as &$item) {
+                $item['score'] = 10;
+            }
+            unset($item);
+        } else {
+            foreach ($topItems as &$item) {
+                $norm = (($rawScores[$item['id']] - $minScore) / $range) * 10;
+                $item['score'] = round(min($norm, 10), 2);
+            }
+            unset($item);
+        }
+
+        // Sort by normalized score descending
+        usort($topItems, function($a, $b) {
+            return $b['score'] <=> $a['score'];
         });
 
         return array_slice($topItems, 0, $limit);
@@ -67,8 +91,7 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
     }
 }
 
-
-// Get recommendations
+// Then fetch recommendations as usual:
 $userTopItems = getTopItems($conn, $userId, 3);
 $popularItems = getTopItems($conn, null, 3);
 
@@ -188,6 +211,15 @@ $popularItems = getTopItems($conn, null, 3);
             margin-top: 40px;
         }
 
+        .recommendations h2 {
+            color: #2980b9;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #1abc9c;
+            padding-bottom: 8px;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+
         .recommendations h3 {
             color: #2980b9;
             margin-bottom: 15px;
@@ -211,6 +243,15 @@ $popularItems = getTopItems($conn, null, 3);
         .rec-item .price {
             color: #27ae60;
             font-weight: 700;
+            margin-left: 15px;
+        }
+
+        .rec-item .score {
+            font-weight: normal;
+            color: #2980b9;
+            font-size: 0.9rem;
+            margin-left: 15px;
+            white-space: nowrap;
         }
 
         .links {
@@ -294,6 +335,7 @@ $popularItems = getTopItems($conn, null, 3);
                 <div class="rec-item">
                     <div><?= htmlspecialchars($item['item_name']) ?></div>
                     <div class="price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <div class="score">Score: <?= $item['score'] ?>/10</div>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>
@@ -306,6 +348,7 @@ $popularItems = getTopItems($conn, null, 3);
                 <div class="rec-item">
                     <div><?= htmlspecialchars($item['item_name']) ?></div>
                     <div class="price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <div class="score">Score: <?= $item['score'] ?>/10</div>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>

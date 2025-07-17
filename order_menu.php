@@ -14,7 +14,7 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
-// Function to get top ordered items (user-specific or global)
+// Function to get top ordered items (user-specific or global), with normalized score capped at 10
 function getTopItems(PDO $conn, $userId = null, $limit = 3) {
     try {
         if ($userId) {
@@ -52,11 +52,35 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
         $stmt->execute($topItemIds);
         $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // ✅ Custom sorting: by score = quantity × price
-        usort($topItems, function($a, $b) use ($itemTotals) {
-            $scoreA = $itemTotals[$a['id']] * $a['price'];
-            $scoreB = $itemTotals[$b['id']] * $b['price'];
-            return $scoreB <=> $scoreA;
+        // Calculate raw scores: quantity * price
+        $rawScores = [];
+        foreach ($topItems as $item) {
+            $rawScores[$item['id']] = ($itemTotals[$item['id']] ?? 0) * $item['price'];
+        }
+
+        // Find min and max raw scores for normalization
+        $minScore = min($rawScores);
+        $maxScore = max($rawScores);
+
+        // Avoid division by zero if all scores are same
+        $range = $maxScore - $minScore;
+        if ($range == 0) {
+            // All scores same, assign max score 10 to all
+            foreach ($topItems as &$item) {
+                $item['score'] = 10;
+            }
+        } else {
+            // Normalize each score to 0-10 scale
+            foreach ($topItems as &$item) {
+                $normalized = (($rawScores[$item['id']] - $minScore) / $range) * 10;
+                $item['score'] = round(min($normalized, 10), 2); // cap at 10 and round
+            }
+            unset($item);
+        }
+
+        // Sort by normalized score descending
+        usort($topItems, function($a, $b) {
+            return $b['score'] <=> $a['score'];
         });
 
         return array_slice($topItems, 0, $limit);
@@ -66,9 +90,10 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
     }
 }
 
-
 $userTopItems = getTopItems($conn, $userId, 3);
 $popularItems = getTopItems($conn, null, 3);
+
+// (The rest of your code handling order placement...)
 
 $inputQuantities = $_POST['quantity'] ?? [];
 $paymentMethod = $_POST['payment_method'] ?? '';
@@ -82,7 +107,6 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
     $orderItems = [];
     foreach ($inputQuantities as $menuId => $qty) {
         $qty = (int)$qty;
@@ -166,6 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <title>Place Order - Restaurant</title>
     <style>
+        /* Your CSS styles unchanged */
+        /* ... (same as your code) ... */
         body {
             margin: 0;
             padding: 0;
@@ -282,7 +308,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .payment-method, .order-type, .delivery-address {
             margin-top: 25px;
         }
-
         /* Recommendation section styles */
         .recommendations {
             max-width: 900px;
@@ -341,6 +366,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 1.1rem;
             margin-bottom: 10px;
         }
+        .recommendation-card .item-score {
+            font-weight: 600;
+            color: #2980b9;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
         .recommendation-card input[type=number] {
             width: 70px;
             font-size: 1rem;
@@ -391,6 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="recommendation-card">
                     <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
                     <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <div class="item-score">Score: <?= $item['score'] ?>/10</div>
                     <input type="number" min="0" name="quantity[<?= $item['id'] ?>]" value="<?= isset($inputQuantities[$item['id']]) ? (int)$inputQuantities[$item['id']] : 0 ?>" />
                 </div>
             <?php endforeach; ?>
@@ -406,6 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="recommendation-card">
                     <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
                     <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                    <div class="item-score">Score: <?= $item['score'] ?>/10</div>
                     <input type="number" min="0" name="quantity[<?= $item['id'] ?>]" value="<?= isset($inputQuantities[$item['id']]) ? (int)$inputQuantities[$item['id']] : 0 ?>" />
                 </div>
             <?php endforeach; ?>

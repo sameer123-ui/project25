@@ -14,8 +14,8 @@ try {
     die("Database error: " . $e->getMessage());
 }
 
-// Helper function to aggregate top items for a given user or all users
-function getTopItems(PDO $conn, $userId = null, $limit = 3) {
+// Helper function to get top items with score normalized to 10
+function getTopItemsNormalizedScore(PDO $conn, $userId = null, $limit = 3) {
     try {
         if ($userId) {
             $stmt = $conn->prepare("SELECT order_details FROM orders WHERE user_id = ?");
@@ -46,17 +46,33 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
 
         if (empty($itemTotals)) return [];
 
+        // Fetch item details for all ordered item ids
         $topItemIds = array_keys($itemTotals);
         $placeholders = implode(',', array_fill(0, count($topItemIds), '?'));
         $stmt = $conn->prepare("SELECT id, item_name, price FROM menu WHERE id IN ($placeholders)");
         $stmt->execute($topItemIds);
         $topItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // ✅ Custom sorting: by score = quantity × price
-        usort($topItems, function($a, $b) use ($itemTotals) {
-            $scoreA = $itemTotals[$a['id']] * $a['price'];
-            $scoreB = $itemTotals[$b['id']] * $b['price'];
-            return $scoreB <=> $scoreA;
+        // Compute raw scores = quantity * price
+        $rawScores = [];
+        foreach ($topItems as $item) {
+            $rawScores[$item['id']] = $itemTotals[$item['id']] * $item['price'];
+        }
+
+        // Normalize scores to 0-10 scale
+        $minScore = min($rawScores);
+        $maxScore = max($rawScores);
+        $range = $maxScore - $minScore ?: 1; // prevent division by zero
+
+        foreach ($topItems as &$item) {
+            $raw = $rawScores[$item['id']];
+            $item['score'] = round(10 * ($raw - $minScore) / $range, 1);
+        }
+        unset($item); // break reference
+
+        // Sort descending by normalized score
+        usort($topItems, function($a, $b) {
+            return $b['score'] <=> $a['score'];
         });
 
         return array_slice($topItems, 0, $limit);
@@ -66,12 +82,11 @@ function getTopItems(PDO $conn, $userId = null, $limit = 3) {
     }
 }
 
-
 // 2. Fetch top 3 items ordered by this user
-$userTopItems = getTopItems($conn, $userId, 3);
+$userTopItems = getTopItemsNormalizedScore($conn, $userId, 3);
 
-// 3. Fetch top 3 popular items from all orders
-$popularItems = getTopItems($conn, null, 3);
+// 3. Fetch top 3 popular items from all users
+$popularItems = getTopItemsNormalizedScore($conn, null, 3);
 
 ?>
 
@@ -179,9 +194,8 @@ $popularItems = getTopItems($conn, null, 3);
             <li><a href="order_history.php">Order History</a></li>
             <li><a href="book_table.php">Booking</a></li>
             <li><a href="my_bookings.php">My bookings</a></li>
-                 <li><a href="feedback.php">feedback</a></li>
+            <li><a href="feedback.php">feedback</a></li>
             <li><a href="profile.php">Manage Profile</a></li>
-            
             <li><a class="logout" href="logout.php">Logout</a></li>
         </ul>
     </div>
@@ -195,7 +209,10 @@ $popularItems = getTopItems($conn, null, 3);
         <?php foreach ($userTopItems as $item): ?>
             <div class="menu-item">
                 <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
-                <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                <div class="item-price">
+                    Rs <?= number_format($item['price'], 2) ?>
+                    <small style="color:#888;">(Score: <?= $item['score'] ?> / 10)</small>
+                </div>
             </div>
         <?php endforeach; ?>
     <?php else: ?>
@@ -207,7 +224,10 @@ $popularItems = getTopItems($conn, null, 3);
         <?php foreach ($popularItems as $item): ?>
             <div class="menu-item">
                 <div class="item-name"><?= htmlspecialchars($item['item_name']) ?></div>
-                <div class="item-price">Rs <?= number_format($item['price'], 2) ?></div>
+                <div class="item-price">
+                    Rs <?= number_format($item['price'], 2) ?>
+                    <small style="color:#888;">(Score: <?= $item['score'] ?> / 10)</small>
+                </div>
             </div>
         <?php endforeach; ?>
     <?php else: ?>

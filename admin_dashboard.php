@@ -44,7 +44,6 @@ if (count($where) > 0) {
     $where_sql = "WHERE " . implode(' AND ', $where);
 }
 
-// For dashboard counts
 try {
     $staffCount = $conn->query("SELECT COUNT(*) FROM staff")->fetchColumn();
     $menuCount = $conn->query("SELECT COUNT(*) FROM menu")->fetchColumn();
@@ -52,61 +51,13 @@ try {
     $userCount = $conn->query("SELECT COUNT(*) FROM users")->fetchColumn();
     $bookingCount = $conn->query("SELECT COUNT(*) FROM table_bookings")->fetchColumn();
 
+    // Total revenue calculation
+    $totalRevenue = $conn->query("SELECT IFNULL(SUM(total), 0) FROM orders")->fetchColumn();
+
     // Fetch filtered & sorted orders (limit 100 for performance)
     $orderStmt = $conn->prepare("SELECT * FROM orders $where_sql ORDER BY $sort_by DESC LIMIT 100");
     $orderStmt->execute($params);
     $orders = $orderStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // For charts data:
-
-    // 1) Orders per day (last 30 days)
-    $ordersPerDayStmt = $conn->prepare("
-        SELECT DATE(order_date) as day, COUNT(*) as count
-        FROM orders
-        WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-        GROUP BY day
-        ORDER BY day ASC
-    ");
-    $ordersPerDayStmt->execute();
-    $ordersPerDay = $ordersPerDayStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 2) Revenue per week (last 12 weeks)
-    $revenuePerWeekStmt = $conn->prepare("
-        SELECT YEAR(order_date) as year, WEEK(order_date, 1) as week, SUM(total) as revenue
-        FROM orders
-        WHERE order_date >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK)
-        GROUP BY year, week
-        ORDER BY year, week ASC
-    ");
-    $revenuePerWeekStmt->execute();
-    $revenuePerWeek = $revenuePerWeekStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // 3) Top 5 items by total ordered quantity (assuming order_details stores JSON with items and quantity)
-    $topItems = [];
-    $menuItemCounts = [];
-
-    $allOrdersStmt = $conn->prepare("SELECT order_details FROM orders");
-    $allOrdersStmt->execute();
-    $allOrders = $allOrdersStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($allOrders as $order) {
-        $items = json_decode($order['order_details'], true);
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                $itemName = $item['name'] ?? null;
-                $qty = intval($item['quantity'] ?? 0);
-                if ($itemName && $qty > 0) {
-                    if (!isset($menuItemCounts[$itemName])) {
-                        $menuItemCounts[$itemName] = 0;
-                    }
-                    $menuItemCounts[$itemName] += $qty;
-                }
-            }
-        }
-    }
-
-    arsort($menuItemCounts);
-    $topItems = array_slice($menuItemCounts, 0, 5, true);
 
 } catch (PDOException $e) {
     die("Database error: " . $e->getMessage());
@@ -135,14 +86,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     fclose($output);
     exit;
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Admin Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     body {
         font-family: 'Inter', sans-serif;
@@ -271,26 +220,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         background-color: #f9f9f9;
     }
 
-    /* Chart containers */
-    .charts {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 40px;
-        justify-content: space-between;
-    }
-    .chart-container {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-        padding: 20px;
-        flex: 1 1 320px;
-    }
-    .chart-container h3 {
-        text-align: center;
-        color: #34495e;
-        margin-bottom: 15px;
-    }
-
     footer {
         background-color: #2c3e50;
         color: white;
@@ -363,6 +292,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             <h3>Total Orders</h3>
             <p><?= $orderCount ?></p>
         </a>
+        <a href="view_orders.php" class="card" title="Total Revenue">
+            <div class="card-icon">💰</div>
+            <h3>Total Revenue (Rs)</h3>
+            <p><?= number_format($totalRevenue, 2) ?></p>
+        </a>
         <a href="manage_users.php" class="card" title="Registered Users">
             <div class="card-icon">👥</div>
             <h3>Registered Users</h3>
@@ -397,7 +331,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         </select>
 
         <button type="submit">Filter</button>
-
         <button type="submit" name="export" value="csv" style="background-color:#2980b9; margin-left: 10px;">Export CSV</button>
     </form>
 
@@ -419,39 +352,18 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             <?php else: ?>
                 <?php foreach ($orders as $order): ?>
                   <tr>
-    <td><?= htmlspecialchars($order['id']) ?></td>
-    <td><?= htmlspecialchars($order['user_id']) ?></td>
-    <td><?= htmlspecialchars($order['order_date']) ?></td>
-    <td><?= number_format($order['total'], 2) ?></td>
-    <td><?= htmlspecialchars(ucfirst($order['status'])) ?></td>
-    <td><?= htmlspecialchars($order['payment_method'] ?? '') ?></td>
-    <td><?= htmlspecialchars($order['order_type'] ?? '') ?></td>
-</tr>
-
+                    <td><?= htmlspecialchars($order['id']) ?></td>
+                    <td><?= htmlspecialchars($order['user_id']) ?></td>
+                    <td><?= htmlspecialchars($order['order_date']) ?></td>
+                    <td><?= number_format($order['total'], 2) ?></td>
+                    <td><?= htmlspecialchars(ucfirst($order['status'])) ?></td>
+                    <td><?= htmlspecialchars($order['payment_method'] ?? '') ?></td>
+                    <td><?= htmlspecialchars($order['order_type'] ?? '') ?></td>
+                  </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
-
-    <div class="charts">
-
-        <div class="chart-container">
-            <h3>Orders Per Day (Last 30 Days)</h3>
-            <canvas id="ordersPerDayChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h3>Revenue Per Week (Last 12 Weeks)</h3>
-            <canvas id="revenuePerWeekChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h3>Top 5 Items Ordered</h3>
-            <canvas id="topItemsChart"></canvas>
-        </div>
-
-    </div>
-
 </div>
 
 <footer style="background-color: #2c3e50; color: white; padding: 20px 0; text-align: center; margin-top: 100px;">
@@ -461,94 +373,13 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             <a href="manage_staff.php" style="color: #ecf0f1; text-decoration: none;">👨‍🍳 Staff</a>
             <a href="manage_menu.php" style="color: #1abc9c; text-decoration: none;">📋 Menu</a>
             <a href="view_orders.php" style="color: #ecf0f1; text-decoration: none;">🧾 Orders</a>
-             <a href="admin_bookings.php" style="color: #ecf0f1; text-decoration: none;">🧾 Bookings</a>
+            <a href="admin_bookings.php" style="color: #ecf0f1; text-decoration: none;">🪑 Bookings</a>
             <a href="manage_users.php" style="color: #ecf0f1; text-decoration: none;">👥 Users</a>
             <a href="logout.php" style="color: #e74c3c; text-decoration: none;">🚪 Logout</a>
         </div>
         <p style="margin-top: 15px; font-size: 14px; color: #bdc3c7;">&copy; <?= date("Y") ?> Restaurant Admin Panel</p>
     </div>
 </footer>
-
-<script>
-    // Orders Per Day Chart
-    const ordersPerDayCtx = document.getElementById('ordersPerDayChart').getContext('2d');
-    const ordersPerDayLabels = <?= json_encode(array_column($ordersPerDay, 'day')) ?>;
-    const ordersPerDayData = <?= json_encode(array_column($ordersPerDay, 'count')) ?>;
-
-    new Chart(ordersPerDayCtx, {
-        type: 'bar',
-        data: {
-            labels: ordersPerDayLabels,
-            datasets: [{
-                label: 'Orders',
-                data: ordersPerDayData,
-                backgroundColor: '#1abc9c',
-            }]
-        },
-        options: {
-            scales: {
-                x: { ticks: { maxRotation: 90, minRotation: 45 }},
-                y: { beginAtZero: true, stepSize: 1 }
-            }
-        }
-    });
-
-    // Revenue Per Week Chart
-    const revenuePerWeekCtx = document.getElementById('revenuePerWeekChart').getContext('2d');
-    const revenueLabels = <?= json_encode(array_map(fn($r) => "W{$r['week']} {$r['year']}", $revenuePerWeek)) ?>;
-    const revenueData = <?= json_encode(array_map(fn($r) => floatval($r['revenue']), $revenuePerWeek)) ?>;
-
-    new Chart(revenuePerWeekCtx, {
-        type: 'line',
-        data: {
-            labels: revenueLabels,
-            datasets: [{
-                label: 'Revenue (₹)',
-                data: revenueData,
-                borderColor: '#2980b9',
-                backgroundColor: 'rgba(41, 128, 185, 0.2)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 3,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-
-    // Top Items Chart
-    const topItemsCtx = document.getElementById('topItemsChart').getContext('2d');
-    const topItemsLabels = <?= json_encode(array_keys($topItems)) ?>;
-    const topItemsData = <?= json_encode(array_values($topItems)) ?>;
-
-    new Chart(topItemsCtx, {
-        type: 'pie',
-        data: {
-            labels: topItemsLabels,
-            datasets: [{
-                label: 'Top Items',
-                data: topItemsData,
-                backgroundColor: [
-                    '#1abc9c',
-                    '#2980b9',
-                    '#f39c12',
-                    '#e74c3c',
-                    '#8e44ad'
-                ],
-                hoverOffset: 20
-            }]
-        },
-        options: {
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-</script>
 
 </body>
 </html>
