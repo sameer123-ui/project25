@@ -1,43 +1,54 @@
 <?php
+// 🚫 NO SPACES ABOVE THIS LINE — VERY IMPORTANT
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-if (session_status() == PHP_SESSION_NONE) {
+
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 include 'db_connect.php';
 
-define('CUSTOM_SALT', 'your-secure-salt-value'); // Use same salt as in login
+define('CUSTOM_SALT', 'your-secure-salt-value');
 
+// Custom hashing function
 function custom_hash($password) {
     return hash_hmac('sha256', $password, CUSTOM_SALT);
 }
 
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Get form values
     $username = trim($_POST['username']);
     $password = $_POST['password'];
-    $role = 'user'; // Force role to user
+    $role = "user"; // Forced user role
 
+    // Hash password
     $hashed_password = custom_hash($password);
 
     // Check if username exists
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username");
+    $stmt = $conn->prepare("SELECT id FROM users WHERE username = :username");
     $stmt->bindValue(':username', $username);
     $stmt->execute();
 
     if ($stmt->rowCount() > 0) {
         $error = "Username already exists.";
     } else {
-        $stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (:username, :password, :role)");
+        // Insert user
+        $stmt = $conn->prepare("
+            INSERT INTO users (username, password, role) 
+            VALUES (:username, :password, :role)
+        ");
+
         $stmt->bindValue(':username', $username);
         $stmt->bindValue(':password', $hashed_password);
         $stmt->bindValue(':role', $role);
 
         if ($stmt->execute()) {
-            $_SESSION['username'] = $username;
-            $_SESSION['role'] = $role;
+            // Redirect to login
             header("Location: login.php?registered=1");
             exit();
         } else {
@@ -46,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,16 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             height: 100vh;
         }
         .register-container {
-            background: #ffffff;
+            background: #fff;
             padding: 30px 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            width: 100%;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
             max-width: 400px;
+            width: 100%;
         }
         .register-container h2 {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             color: #333;
         }
         input[type="text"], input[type="password"], select {
@@ -87,25 +97,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         input[type="submit"] {
             width: 100%;
             padding: 12px;
-            background: #27ae60;
+            margin-top: 20px;
             border: none;
-            color: white;
+            background: #27ae60;
+            color: #fff;
             font-size: 16px;
             border-radius: 6px;
-            margin-top: 20px;
             cursor: pointer;
-            transition: background 0.3s ease;
         }
         input[type="submit"]:hover {
             background: #219150;
         }
         .error {
+            background: #fdecea;
             color: #e74c3c;
-            background: #fceae9;
             padding: 10px;
+            margin-bottom: 15px;
             border-left: 4px solid #e74c3c;
             border-radius: 5px;
-            margin-bottom: 15px;
         }
         .links {
             text-align: center;
@@ -114,7 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .links a {
             color: #2980b9;
             text-decoration: none;
-            font-size: 14px;
         }
         .links a:hover {
             text-decoration: underline;
@@ -125,23 +133,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <div class="register-container">
     <h2>Create Account</h2>
+
     <?php if ($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
-    <form method="POST">
-        <input type="text" name="username" placeholder="Choose a username" required />
-        <input type="password" name="password" placeholder="Create a password" required />
 
-        <!-- Display dropdown (disabled for UI clarity) -->
-        <select name="visible_role" disabled>
-            <option value="user" selected>User</option>
+    <form method="POST">
+        <input type="text" name="username" placeholder="Choose a username" required>
+        <input type="password" name="password" placeholder="Create a password" required>
+
+        <!-- visible but disabled dropdown -->
+        <select disabled>
+            <option selected>User</option>
         </select>
 
-        <!-- Actual role passed securely -->
-        <input type="hidden" name="role" value="user" />
+        <input type="hidden" name="role" value="user">
 
-        <input type="submit" value="Register" />
+        <input type="submit" value="Register">
     </form>
+
     <div class="links">
         <p><a href="login.php">Already have an account? Login</a></p>
     </div>

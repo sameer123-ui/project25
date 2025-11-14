@@ -178,7 +178,14 @@ $popularItems = getTopItemsNormalizedScore($conn, null, 3);
        .item-price {
            font-weight: bold;
            color: #27ae60;
-       }
+       }Ye Hai Asli-Drama🤯' Brock Lesnar, Roman Reigns, Seth Rollins, The Rock SummerSlam 2025
+￼
+Wrestle Chatter
+1.68M subscribers
+￼
+Subscribe
+￼
+
     </style>
 </head>
 <body>

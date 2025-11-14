@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="links">
     <p><a href="register.php">Don't have an account? Register</a></p>
     <p><a href="forgot_password.php">Forgot Password?</a></p>
-    <p><a href="admin_staff_login.php">Admin / Staff Login</a></p>
+
   </div>
 </div>
 

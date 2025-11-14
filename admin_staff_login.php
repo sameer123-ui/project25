@@ -3,9 +3,11 @@ session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-include 'db_connect.php'; // $conn PDO
+include 'db_connect.php'; // PDO connection
+
 define('CUSTOM_SALT', 'your-secure-salt-value');
 
+// Custom hashing (old method)
 function custom_hash($password) {
     return hash_hmac('sha256', $password, CUSTOM_SALT);
 }
@@ -13,21 +15,51 @@ function custom_hash($password) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
     $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    // Only allow role = admin or staff
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username AND (role = 'admin' OR role = 'staff')");
+    // Only allow Admin or Staff login
+    $stmt = $conn->prepare("
+        SELECT * FROM users 
+        WHERE username = :username 
+        AND (role = 'admin' OR role = 'staff')
+    ");
     $stmt->bindParam(':username', $username);
     $stmt->execute();
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
-        if (custom_hash($password) === $user['password']) {
+
+        $db_pass = $user['password'];   // stored password
+        $custom_input = custom_hash($password);  // old hash check
+
+        $login_ok = false;
+
+        // 1️⃣ Check new password_hash() type
+        if (password_verify($password, $db_pass)) {
+            $login_ok = true;
+
+        // 2️⃣ Check old custom hash
+        } elseif ($custom_input === $db_pass) {
+            $login_ok = true;
+
+            // 🔄 Auto-upgrade old hash → new password_hash()
+            $newHash = password_hash($password, PASSWORD_DEFAULT);
+            $update = $conn->prepare("UPDATE users SET password = :p WHERE id = :id");
+            $update->execute([
+                'p' => $newHash,
+                'id' => $user['id']
+            ]);
+        }
+
+        if ($login_ok) {
+            // LOGIN SUCCESS
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
 
+            // Redirect by role
             if ($user['role'] === 'admin') {
                 header("Location: admin_dashboard.php");
             } else {
@@ -37,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Invalid password.";
         }
+
     } else {
         $error = "User not found or not authorized.";
     }
@@ -49,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin / Staff Login - Restaurant System</title>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
@@ -131,18 +165,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 </style>
 </head>
+
 <body>
 
 <div class="login-container">
   <h2>Admin / Staff Login</h2>
+
   <?php if ($error): ?>
     <div class="error"><?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
+
   <form method="POST" autocomplete="off" novalidate>
     <input type="text" name="username" placeholder="Username" required autofocus />
     <input type="password" name="password" placeholder="Password" required />
     <input type="submit" value="Login" />
   </form>
+
   <div class="links">
     <p><a href="forgot_password.php">Forgot Password?</a></p>
     <p><a href="user_login.php">User Login</a></p>
